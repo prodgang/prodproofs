@@ -1,7 +1,7 @@
 import Mathlib.Data.Nat.Factorization.Basic
 import Mathlib.Data.Nat.Prime.Defs
 import Mathlib.Data.Nat.Nth
-
+import Mathlib.Tactic.Linarith.Frontend
 
 
 namespace ProdProofs
