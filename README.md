@@ -1,24 +1,21 @@
 # prod_proofs
 
-This repo contains the proofs of the major results of productive numbers. The proofs are mostly straightforward, but translating them into lean has been a massive headache - in particular nested induction over lists of lists. If you're able to fix these lean proofs, would be much appreciated :)
+This repo contains the proofs of the major results of productive numbers. The proofs are mostly straightforward, but translating them into lean has been a massive headache - in particular nested induction over lists of lists. 
 
 
 ## Definitions
 
-Definition of a productive number. This is written up (albeit messily) in defs.lean.
+Definition of a productive number. This is written up in `raw_defs.lean`.
 
-``inductive prod_num : Type
+``inductive RawProd where
+  | zero : RawProd
+  | cons : List RawProd → RawProd
+  deriving Repr``
 
-| p0 : prod_num
-
-| pli : List prod_num → prod_num
-
-deriving Repr``
-
-By definition, padding zeros does not change a prod, so $[x, y] = [x, y, p0]$ and so on.
+By definition, padding zeros does not change a prod, so $[x, y] = [x, y, zero]$ and so on. This is enforced by defining a quotient type in `quot_defs3.lean`
 
 Interpretation:
-* $eval(p0) = 0$
+* $eval(zero) = 0$
 * $eval([x_1, x_2, ..., x_n]) = 2^{eval(x_1)} \times 3^{eval(x_2)} \times ... \times p_n^{eval(x_n)}$ (where $p_n$ is the nth prime)
 
 Inequality:
