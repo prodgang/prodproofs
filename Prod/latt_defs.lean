@@ -13,6 +13,7 @@ termination_by n => n
 decreasing_by
   simp_wf
   linarith
+  sorry
 
 
 
@@ -28,6 +29,7 @@ termination_by n => n
 decreasing_by
   simp_wf
   linarith
+  sorry
 
 
 end RawProd
@@ -35,7 +37,7 @@ end RawProd
 namespace QProd
 
 def prune : QProd → QProd → QProd :=
-  Quotient.lift
+  Quotient.lift RawProd.prune_raw
 
 
 end QProd

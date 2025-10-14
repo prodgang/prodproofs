@@ -124,21 +124,17 @@ lemma interp_eq_interp_trim (xs : List RawProd) :
 @[simp]
 lemma equiv_zero_eq_zero (x : RawProd) (hequiv : equiv zero x) : x = zero := by
   simp [equiv] at hequiv
-  split at hequiv
-  next x y heq => simp_all only
-  next x y a heq => simp_all only
-  next x y a heq => simp_all only [reduceCtorEq]
-  next x y xs ys heq => simp_all only [reduceCtorEq]
+  cases x
+  case zero => rfl
+  case cons xs => simp_all only [normalize, reduceCtorEq]
 
 
 @[simp]
 lemma zero_equiv_eq_zero (x : RawProd) (hequiv : equiv x zero) : x = zero := by
   simp [equiv] at hequiv
-  split at hequiv
-  next x y heq => simp_all only
-  next x y a heq => simp_all only [reduceCtorEq]
-  next x y a heq => simp_all only
-  next x y xs ys heq => simp_all only [reduceCtorEq]
+  cases x
+  case zero => rfl
+  case cons xs => simp_all only [normalize, reduceCtorEq]
 
 @[aesop safe]
 lemma interp_eq_norm_interp (x : RawProd) :  interpRaw (normalize x) = interpRaw x := by
@@ -175,11 +171,11 @@ theorem equiv_interp_eq : ∀ x y, equiv x y → interpRaw x = interpRaw y := by
   case h_cons_cons =>
     intro xs ys h_interp h_equiv
     simp only [interpRaw]
-    simp only [equiv] at h_equiv
-    -- h_equiv : trim (List.map normalize xs) = trim (List.map normalize ys)
+    simp only [equiv, normalize] at h_equiv
+    -- h_equiv : cons trim (List.map normalize xs) = cons trim (List.map normalize ys)
     have h1 : interpRaw.interpList (trim (List.map normalize xs)) 0 =
               interpRaw.interpList (trim (List.map normalize ys)) 0 := by
-      rw [h_equiv]
+      simp_all only [cons.injEq]
     rw [interpList_eq_interpList_trim (List.map normalize xs) 0] at h1
     rw [interpList_eq_interpList_trim (List.map normalize ys) 0] at h1
     rw [interpList_map_normalize xs 0] at h1
