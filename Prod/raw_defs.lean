@@ -9,6 +9,14 @@ inductive RawProd where
 
 namespace RawProd
 
+-- the most basic lemmas
+@[aesop unsafe]
+lemma zero_neq_cons (xs : List RawProd) : zero ≠ cons xs := by simp only [ne_eq, reduceCtorEq, not_false_eq_true]
+
+@[aesop unsafe]
+lemma cons_neq_zero (xs : List RawProd) : cons xs ≠ zero := by simp only [ne_eq, reduceCtorEq, not_false_eq_true]
+
+
 variable {P : RawProd → Prop}
 
 /-- Decidable equality for RawProd -/

@@ -16,13 +16,15 @@ def normalize : RawProd → RawProd
 @[simp]
 lemma normalize_zero_eq_zero : normalize zero = zero := by simp only [normalize]
 
+@[simp] lemma trim_nil_eq_nil : trim [] = [] := by simp [trim]
+
 -- The equiv definition stays the same:
-def equiv_old (x y : RawProd) : Prop :=
-  match x, y with
-  | zero, zero => True
-  | zero, cons _ => False
-  | cons _, zero => False
-  | cons xs, cons ys => trim (List.map normalize xs) = trim (List.map normalize ys)
+-- def equiv_old (x y : RawProd) : Prop :=
+--   match x, y with
+--   | zero, zero => True
+--   | zero, cons _ => False
+--   | cons _, zero => False
+--   | cons xs, cons ys => trim (List.map normalize xs) = trim (List.map normalize ys)
 
 def equiv (x y : RawProd) : Prop :=
   normalize x = normalize y
@@ -31,11 +33,6 @@ def equiv (x y : RawProd) : Prop :=
 theorem equiv_refl : ∀ x, equiv x x := by
   intro x
   cases x <;> simp [equiv]
-
--- theorem equiv_symm_old : ∀ x y, equiv x y → equiv y x := by
---   intro x y h
---   cases x <;> cases y <;> simp only [equiv] at h ⊢
---   · exact h.symm
 
 theorem equiv_symm : ∀ x y, equiv x y → equiv y x := by
   intro x y h
@@ -66,21 +63,6 @@ lemma trim_idem (xs : List RawProd) : trim (trim xs) = trim xs := by
   apply List.rdropWhile_idempotent
 
 
-lemma map_normalize_trim_of_fixed_old {l : List RawProd}
-  (h : ∀ a ∈ l, normalize a = a) :
-  List.map normalize (trim l) = trim l := by
-      induction l with
-  | nil => simp only [trim, List.rdropWhile_nil, List.map_nil]
-  | cons x xs ih =>
-      sorry
-      -- proof state:
-      -- 1 goal
-      -- case cons
-      -- x : RawProd
-      -- xs : List RawProd
-      -- ih : (∀ a ∈ xs, a.normalize = a) → List.map normalize (trim xs) = trim xs
-      -- h : ∀ a ∈ x :: xs, a.normalize = a
-      -- ⊢ List.map normalize (trim (x :: xs)) = trim (x :: xs)
 -- auxiliary lemma: if f fixes every element of l, then map f l = l
 lemma map_eq_of_fixed {α : Type _} (f : α → α) (l : List α)
     (H : ∀ x ∈ l, f x = x) : (l.map f) = l := by
@@ -148,6 +130,8 @@ lemma map_normalize_trim_of_fixed {xs : List RawProd}
       simp_all only [List.mem_append, List.mem_cons, List.not_mem_nil, or_false, true_or, implies_true, forall_const, beq_iff_eq, ↓reduceIte, not_false_eq_true, List.rdropWhile_concat_neg, or_true]
 
 
+
+
 @[aesop safe]
 lemma normalize_idem (x : RawProd) : normalize (normalize x) = normalize x := by
   induction x using RawProd.induction with
@@ -201,6 +185,39 @@ lemma trim_length_leq (xs : List RawProd) : (trim xs).length ≤ xs.length := by
 
 
 
+@[simp]
+lemma trim_cons_eq_cons (xs : List RawProd) : trim [cons xs] = [cons xs] := by
+  rfl
+
+@[simp]
+lemma trim_append_cons_eq_cons (xs ys : List RawProd) :  trim (xs ++ [cons ys]) = (xs ++ [cons ys]) := by
+  simp only [trim, beq_iff_eq, reduceCtorEq, not_false_eq_true, List.rdropWhile_concat_neg]
+
+
+lemma trim_append_cons_neq_nil (xs ys : List RawProd) : trim (xs ++ [cons ys]) ≠ [] := by
+  simp only [trim, beq_iff_eq, reduceCtorEq, not_false_eq_true, List.rdropWhile_concat_neg, ne_eq,
+    List.append_eq_nil_iff, List.cons_ne_self, and_false]
+
+
+
+
+lemma trim_eq_nil_iff (xs : List RawProd) : trim xs = [] ↔ ∀ x ∈ xs, x = zero := by
+  induction xs using List.reverseRecOn with
+  | nil => simp only [trim_nil_eq_nil, List.not_mem_nil, IsEmpty.forall_iff, implies_true]
+  | append_singleton ys y ih =>
+    constructor
+    . intro htrim
+      cases y
+      . simp_all only [trim_append_zero, List.mem_append, List.mem_cons, List.not_mem_nil, or_false]
+        intro z hz
+        cases hz with
+        | inl hin => exact (htrim z hin)
+        | inr hze => exact hze
+      . intro z zs
+        absurd htrim
+        apply trim_append_cons_neq_nil
+    . intro heqz
+      simp_all only [List.mem_append, List.mem_cons, List.not_mem_nil, or_false, or_true, true_or, implies_true, iff_true, trim_append_zero]
 
 
 
@@ -208,14 +225,13 @@ lemma trim_length_leq (xs : List RawProd) : (trim xs).length ≤ xs.length := by
 lemma append_trim_eq_imply_neq_zero (xs : List RawProd) (y : RawProd) (h : trim (xs ++ [y]) = xs ++ [y] ) : y ≠ zero := by
   cases y
   case zero =>
-
-    have h2 : (trim xs).length < (xs ++ [zero]).length := -- idk if this is the cleanest but I wanted to try out calc
+    have h2 : (trim xs).length < (xs ++ [zero]).length :=
+      -- idk if this is the cleanest but I wanted to try out calc
       calc (trim xs).length ≤ xs.length := trim_length_leq xs
            _      < (xs ++ [zero]).length := by simp only [List.length_append, List.length_cons, List.length_nil, zero_add, lt_add_iff_pos_right, zero_lt_one]
     simp_all only [trim_append_zero, List.length_append, List.length_cons, List.length_nil, zero_add, lt_self_iff_false]
 
-  case cons y =>
-    simp only [ne_eq, reduceCtorEq, not_false_eq_true]
+  case cons y => simp only [ne_eq, reduceCtorEq, not_false_eq_true]
 
 
 end RawProd

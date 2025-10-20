@@ -1,5 +1,5 @@
 import Prod.raw_defs
-import Prod.quot_defs3
+import Prod.quot_defs
 import Mathlib.Data.Nat.Prime.Basic
 import Mathlib.Data.Nat.Nth
 import Mathlib.Data.Nat.Factorization.Basic
@@ -22,6 +22,7 @@ where
 
 
 /-- Adding a single zero to the end doesn't change interpretation -/
+@[simp]
 lemma interpList_append_zero (xs : List RawProd) (k : ℕ) :
     interpRaw.interpList (xs ++ [zero]) k = interpRaw.interpList xs k := by
   induction xs generalizing k with
@@ -36,47 +37,10 @@ lemma interpList_append_zero (xs : List RawProd) (k : ℕ) :
 lemma interpList_append_zeros (xs : List RawProd) (n k : ℕ) :
     interpRaw.interpList (xs ++ List.replicate n zero) k = interpRaw.interpList xs k := by
   induction n with
-  | zero => simp
-  | succ n ih =>
-    rw [List.replicate_succ', ← List.append_assoc, interpList_append_zero, ih]
+  | zero => simp only [List.replicate_zero, List.append_nil]
+  | succ n ih => rw [List.replicate_succ', ← List.append_assoc, interpList_append_zero, ih]
 
-/-! ## Properties of trim (removeTrailingZeros) -/
 
-/-- A list trims to empty iff all elements are zero -/
-lemma trim_eq_nil_iff (xs : List RawProd) :
-    trim xs = [] ↔ ∀ x ∈ xs, x = zero := by
-  induction xs with
-  | nil =>
-    simp only [trim, List.not_mem_nil, IsEmpty.forall_iff, implies_true]
-  | cons x xs ih =>
-    simp only [trim]
-    split
-    next h => -- removeTrailingZeros xs = []
-      split_ifs with hx
-      · -- x == zero is true
-        simp only [List.mem_cons, forall_eq_or_imp]
-        constructor
-        · intro _
-          constructor
-          · -- Need to show x = RawProd.zero from x == RawProd.zero
-            exact beq_iff_eq.mp hx
-          · exact ih.mp h
-        · simp only [implies_true]
-      · -- x == zero is false
-        simp only [List.mem_cons, forall_eq_or_imp]
-        constructor
-        · intro h_eq; cases h_eq
-        · intro ⟨h_x_zero, _⟩
-          exact absurd ((beq_iff_eq).mpr h_x_zero) hx
-    next ys h => -- removeTrailingZeros xs = y :: ys
-      simp only [List.mem_cons, forall_eq_or_imp]
-      constructor
-      · intro h_eq; cases h_eq
-      · intro ⟨h_x, h_xs⟩
-        have : trim xs = [] := ih.mpr h_xs
-        rw [this] at h
-        absurd h
-        rfl
 
 /-- A list of all zeros has interpretation 1 -/
 lemma interpList_all_zeros (xs : List RawProd) (k : ℕ) (h : ∀ x ∈ xs, x = zero) :
@@ -94,25 +58,14 @@ lemma interpList_all_zeros (xs : List RawProd) (k : ℕ) (h : ∀ x ∈ xs, x = 
 @[aesop safe]
 lemma interpList_eq_interpList_trim (xs : List RawProd) (k : ℕ) :
    interpRaw.interpList (trim xs) k = interpRaw.interpList xs k := by
-  induction xs generalizing k with
-  | nil => simp only [trim]
-  | cons x xs ih =>
-    simp only [trim]
-    split
-    next h => -- trim xs = []
-      have h_all_zero : ∀ y ∈ xs, y = zero := trim_eq_nil_iff xs |>.mp h
-      split_ifs with hx
-      · -- x == zero, so trim returns []
-        simp only [interpRaw.interpList]
-        rw [interpList_all_zeros xs (k + 1) h_all_zero]
-        rw [beq_iff_eq.mp hx, interpRaw, pow_zero, one_mul]
-      · -- x ≠ zero, so trim returns [x]
-        simp only [interpRaw.interpList]
-        rw [interpList_all_zeros xs (k + 1) h_all_zero]
-    next ys h => -- trim xs = y :: ys
-      simp only [interpRaw.interpList]
-      congr 1
-      exact ih (k + 1)
+  induction xs using List.reverseRecOn with --generalizing k with
+  | nil => simp only [trim, List.rdropWhile_nil]
+  | append_singleton ys y ih =>
+    cases y
+    case zero => simp only [trim_append_zero, interpList_append_zero]; exact ih
+    case cons => simp only [trim_append_cons_eq_cons]
+
+
 
 
 @[aesop safe]
@@ -139,9 +92,9 @@ lemma zero_equiv_eq_zero (x : RawProd) (hequiv : equiv x zero) : x = zero := by
 @[aesop safe]
 lemma interp_eq_norm_interp (x : RawProd) :  interpRaw (normalize x) = interpRaw x := by
   induction x using RawProd.induction with
-  | h_zero => simp [normalize]
+  | h_zero => simp only [normalize_zero_eq_zero]
   | h_cons xs ih =>
-    simp [normalize, interpRaw]
+    simp_all [normalize, interpRaw]
     sorry
     --exact interpList_eq_interpList_trim xs 0
     -- cant close, skipping for now
