@@ -52,7 +52,7 @@ lemma interp_injective : Function.Injective interp := by
         -- Need to show non-zero QProd has non-zero interpretation
         sorry
       contradiction
-  | h_cons xs ih_x =>
+  | h_brak xs ih_x =>
     induction y using QProd.induction with
     | h_zero =>
       simp only [interp_zero] at h_eq
@@ -60,7 +60,7 @@ lemma interp_injective : Function.Injective interp := by
         -- Similar to above
         sorry
       contradiction
-    | h_cons ys ih_y =>
+    | h_brak ys ih_y =>
       -- Both are non-atomic, need to show xs and ys yield same interpretations
       -- This will use the uniqueness of prime factorization
       sorry

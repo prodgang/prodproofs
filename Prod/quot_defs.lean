@@ -11,7 +11,7 @@ def trim (xs : List RawProd) : List RawProd := xs.rdropWhile (. == zero)
 /-- Recursively normalize a RawProd by removing trailing zeros at all levels -/
 def normalize : RawProd → RawProd
   | zero => zero
-  | cons xs => cons (trim (List.map normalize xs))
+  | brak xs => brak (trim (List.map normalize xs))
 
 @[simp]
 lemma normalize_zero_eq_zero : normalize zero = zero := by simp only [normalize]
@@ -136,7 +136,7 @@ lemma map_normalize_trim_of_fixed {xs : List RawProd}
 lemma normalize_idem (x : RawProd) : normalize (normalize x) = normalize x := by
   induction x using RawProd.induction with
   | h_zero => simp only [normalize_zero_eq_zero]
-  | h_cons xs ih =>
+  | h_brak xs ih =>
     simp [normalize]
     let A := xs.map (fun t => normalize t)
     -- show each element of A is fixed by normalize
@@ -157,8 +157,8 @@ lemma equiv_of_normalize (x : RawProd) : (normalize x).equiv x := by
   simp [equiv, normalize_idem]
 
 @[aesop unsafe 10%]
-lemma cons_map_normalize (xs : List RawProd) :
-     (cons (List.map normalize xs)).equiv (cons xs) := by
+lemma brak_map_normalize (xs : List RawProd) :
+     (brak (List.map normalize xs)).equiv (brak xs) := by
   simp [equiv, normalize]
   congr 1
   simp only [List.map_inj_left, Function.comp_apply, normalize_idem, implies_true]
@@ -186,15 +186,15 @@ lemma trim_length_leq (xs : List RawProd) : (trim xs).length ≤ xs.length := by
 
 
 @[simp]
-lemma trim_cons_eq_cons (xs : List RawProd) : trim [cons xs] = [cons xs] := by
+lemma trim_brak_eq_brak (xs : List RawProd) : trim [brak xs] = [brak xs] := by
   rfl
 
 @[simp]
-lemma trim_append_cons_eq_cons (xs ys : List RawProd) :  trim (xs ++ [cons ys]) = (xs ++ [cons ys]) := by
+lemma trim_append_brak_eq_brak (xs ys : List RawProd) :  trim (xs ++ [brak ys]) = (xs ++ [brak ys]) := by
   simp only [trim, beq_iff_eq, reduceCtorEq, not_false_eq_true, List.rdropWhile_concat_neg]
 
 
-lemma trim_append_cons_neq_nil (xs ys : List RawProd) : trim (xs ++ [cons ys]) ≠ [] := by
+lemma trim_append_brak_neq_nil (xs ys : List RawProd) : trim (xs ++ [brak ys]) ≠ [] := by
   simp only [trim, beq_iff_eq, reduceCtorEq, not_false_eq_true, List.rdropWhile_concat_neg, ne_eq,
     List.append_eq_nil_iff, List.cons_ne_self, and_false]
 
@@ -215,7 +215,7 @@ lemma trim_eq_nil_iff (xs : List RawProd) : trim xs = [] ↔ ∀ x ∈ xs, x = z
         | inr hze => exact hze
       . intro z zs
         absurd htrim
-        apply trim_append_cons_neq_nil
+        apply trim_append_brak_neq_nil
     . intro heqz
       simp_all only [List.mem_append, List.mem_cons, List.not_mem_nil, or_false, or_true, true_or, implies_true, iff_true, trim_append_zero]
 
@@ -231,7 +231,7 @@ lemma append_trim_eq_imply_neq_zero (xs : List RawProd) (y : RawProd) (h : trim 
            _      < (xs ++ [zero]).length := by simp only [List.length_append, List.length_cons, List.length_nil, zero_add, lt_add_iff_pos_right, zero_lt_one]
     simp_all only [trim_append_zero, List.length_append, List.length_cons, List.length_nil, zero_add, lt_self_iff_false]
 
-  case cons y => simp only [ne_eq, reduceCtorEq, not_false_eq_true]
+  case brak y => simp only [ne_eq, reduceCtorEq, not_false_eq_true]
 
 
 end RawProd
@@ -254,20 +254,20 @@ def normalize : QProd → RawProd :=
   Quotient.lift RawProd.normalize RawProd.equiv_normalize_eq
 
 def ofList (xs : List QProd) : QProd :=
-  mk (RawProd.cons (xs.map normalize))
+  mk (RawProd.brak (xs.map normalize))
 
 @[simp] lemma brak_eq_mk (x : RawProd) : ⟦x⟧ = mk x := by rfl
 
 @[simp] lemma zero_eq_zero : mk RawProd.zero = QProd.zero := by rfl
 
-lemma ofList_map_mk_eq_mk_cons (xs : List RawProd) :
-    ofList (List.map mk xs) = mk (RawProd.cons xs) := by
+lemma ofList_map_mk_eq_mk_brak (xs : List RawProd) :
+    ofList (List.map mk xs) = mk (RawProd.brak xs) := by
   simp only [ofList, normalize, List.map_map]
   apply Quotient.sound
   have hl : Quotient.lift RawProd.normalize RawProd.equiv_normalize_eq ∘ mk = RawProd.normalize :=
     Quotient.lift_comp_mk _ _
   rw [hl]
-  exact RawProd.cons_map_normalize xs
+  exact RawProd.brak_map_normalize xs
 
 /-- Induction principle for QProd -/
 theorem induction {P : QProd → Prop}
@@ -285,7 +285,7 @@ theorem induction {P : QProd → Prop}
     simp only [List.mem_map, forall_exists_index, and_imp,
                forall_apply_eq_imp_iff₂, xs] at h_cons
     specialize h_cons ih_raw
-    rw [ofList_map_mk_eq_mk_cons] at h_cons
+    rw [ofList_map_mk_eq_mk_brak] at h_cons
     exact h_cons
 
 end QProd

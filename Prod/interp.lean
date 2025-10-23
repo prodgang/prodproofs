@@ -10,7 +10,7 @@ namespace RawProd
 /-- Raw interpretation function -/
 noncomputable def interpRaw : RawProd → ℕ
   | zero => 0
-  | cons xs => interpList xs 0
+  | brak xs => interpList xs 0
 where
   interpList : List RawProd → ℕ → ℕ
     | [], _ => 1
@@ -63,14 +63,14 @@ lemma interpList_eq_interpList_trim (xs : List RawProd) (k : ℕ) :
   | append_singleton ys y ih =>
     cases y
     case zero => simp only [trim_append_zero, interpList_append_zero]; exact ih
-    case cons => simp only [trim_append_cons_eq_cons]
+    case brak => simp only [trim_append_brak_eq_brak]
 
 
 
 
 @[aesop safe]
 lemma interp_eq_interp_trim (xs : List RawProd) :
-    interpRaw (cons (trim xs)) = interpRaw (cons xs) := by
+    interpRaw (brak (trim xs)) = interpRaw (brak xs) := by
   simp only [interpRaw]
   exact interpList_eq_interpList_trim xs 0
 
@@ -79,7 +79,7 @@ lemma equiv_zero_eq_zero (x : RawProd) (hequiv : equiv zero x) : x = zero := by
   simp [equiv] at hequiv
   cases x
   case zero => rfl
-  case cons xs => simp_all only [normalize, reduceCtorEq]
+  case brak xs => simp_all only [normalize, reduceCtorEq]
 
 
 @[simp]
@@ -87,13 +87,13 @@ lemma zero_equiv_eq_zero (x : RawProd) (hequiv : equiv x zero) : x = zero := by
   simp [equiv] at hequiv
   cases x
   case zero => rfl
-  case cons xs => simp_all only [normalize, reduceCtorEq]
+  case brak xs => simp_all only [normalize, reduceCtorEq]
 
 @[aesop safe]
 lemma interp_eq_norm_interp (x : RawProd) :  interpRaw (normalize x) = interpRaw x := by
   induction x using RawProd.induction with
   | h_zero => simp only [normalize_zero_eq_zero]
-  | h_cons xs ih =>
+  | h_brak xs ih =>
     simp_all [normalize, interpRaw]
     sorry
     --exact interpList_eq_interpList_trim xs 0
@@ -118,17 +118,17 @@ lemma interpList_map_normalize (xs : List RawProd) (k : ℕ) :
 
 
 theorem equiv_interp_eq : ∀ x y, equiv x y → interpRaw x = interpRaw y := by
-  apply RawProd.induction₂
+  apply RawProd.strong_induction₂
   case h_zero_left => intro y h; apply equiv_zero_eq_zero at h; subst h; rfl
   case h_zero_right => intro x h; apply zero_equiv_eq_zero at h; subst h; rfl
-  case h_cons_cons =>
+  case h_brak_brak =>
     intro xs ys h_interp h_equiv
     simp only [interpRaw]
     simp only [equiv, normalize] at h_equiv
     -- h_equiv : cons trim (List.map normalize xs) = cons trim (List.map normalize ys)
     have h1 : interpRaw.interpList (trim (List.map normalize xs)) 0 =
               interpRaw.interpList (trim (List.map normalize ys)) 0 := by
-      simp_all only [cons.injEq]
+      simp_all only [brak.injEq]
     rw [interpList_eq_interpList_trim (List.map normalize xs) 0] at h1
     rw [interpList_eq_interpList_trim (List.map normalize ys) 0] at h1
     rw [interpList_map_normalize xs 0] at h1
@@ -144,7 +144,7 @@ lemma interp_zero : interpRaw zero = 0 := by
   simp only [interpRaw]
 
 @[simp]
-lemma interp_nil : interpRaw (cons []) = 1 := by
+lemma interp_nil : interpRaw (brak []) = 1 := by
   simp only [interpRaw, interpRaw.interpList]
 
 @[simp]
@@ -157,13 +157,13 @@ lemma interpList_singleton (x : RawProd) (i : ℕ ) : 0 < interpRaw.interpList [
   have hnope : 0 < Nat.nth Nat.Prime i := by simp [Nat.prime_nth_prime, Nat.Prime.pos]
   simp_all only [pow_pos]
 
-@[aesop unsafe] lemma interp_cons_eq_interp_mult (x : RawProd) (xs : List RawProd) (i : ℕ ) : interpRaw.interpList (x::xs) i = interpRaw.interpList [x] i * interpRaw.interpList xs i+1 := by
+@[aesop unsafe] lemma interp_brak_eq_interp_mult (x : RawProd) (xs : List RawProd) (i : ℕ ) : interpRaw.interpList (x::xs) i = interpRaw.interpList [x] i * interpRaw.interpList xs i+1 := by
   sorry
 
 @[aesop unsafe] lemma interpList_gt_zero (xs : List RawProd) (i : ℕ ) : 0 < interpRaw.interpList xs i := by
   induction xs generalizing i with
   | nil => simp only [interpList_nil, zero_lt_one]
-  | cons y ys ih => rw [interp_cons_eq_interp_mult]
+  | cons y ys ih => rw [interp_brak_eq_interp_mult]
                     --have hl : 0 < interpRaw.interpList [y] i := by simp only [interpList_singleton]
                     simp only [lt_add_iff_pos_left, add_pos_iff, interpList_singleton,
                       mul_pos_iff_of_pos_left, zero_lt_one, or_true]
@@ -175,9 +175,9 @@ lemma interpList_singleton (x : RawProd) (i : ℕ ) : 0 < interpRaw.interpList [
 @[simp] lemma raw_interp_eq_zero_eq_zero (x : RawProd) (hz : RawProd.interpRaw x = 0) : x = RawProd.zero := by
   match x with
   | zero => simp
-  | cons [] => simp [interpRaw] at hz
-  | cons (x::xs) => rename_i y
-                    rw [interpRaw, interp_cons_eq_interp_mult] at hz
+  | brak [] => simp [interpRaw] at hz
+  | brak (x::xs) => rename_i y
+                    rw [interpRaw, interp_brak_eq_interp_mult] at hz
                     simp only [Nat.add_eq_zero, mul_eq_zero, one_ne_zero, and_false] at hz
 
 
