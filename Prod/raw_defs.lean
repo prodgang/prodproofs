@@ -157,16 +157,20 @@ theorem strong_induction₃
         exact ih_x x' hx y' z'
 
 
-
+@[simp]
+def padPairF {α : Type _} (f : RawProd → RawProd → α) : List RawProd → List RawProd → List α
+  | xs, ys => xs.zipWithAll (fun oa ob => (f (oa.getD zero) (ob.getD zero))) ys
 
 /- takes two lists and creates a list of pairs, padding shorter list with zeros-/
-def zipPairs : List RawProd → List RawProd → List (RawProd × RawProd)
-  | xs, ys => xs.zipWithAll (fun oa ob => (oa.getD zero, ob.getD zero)) ys
+def padPair : List RawProd → List RawProd → List (RawProd × RawProd)
+  | xs, ys => padPairF (fun x y => (x,y)) xs ys
+
+
 
 
 @[simp]
-lemma zipPairs_nil (xs : List RawProd) : zipPairs xs [] = List.zip xs (List.replicate xs.length zero) := by
-  simp only [zipPairs, List.zipWithAll_nil, Option.getD_some, Option.getD_none]
+lemma padPair_nil (xs : List RawProd) : padPair xs [] = List.zip xs (List.replicate xs.length zero) := by
+  simp only [padPair, padPairF, List.zipWithAll_nil, Option.getD_some, Option.getD_none]
   induction xs with
   | nil => simp only [List.map_nil, List.length_nil, List.replicate_zero, List.zip_nil_right]
   | cons x xx ih =>
@@ -176,8 +180,8 @@ lemma zipPairs_nil (xs : List RawProd) : zipPairs xs [] = List.zip xs (List.repl
     exact ih
 
 @[simp]
-lemma nil_zipPairs (xs : List RawProd) : zipPairs [] xs = List.zip (List.replicate xs.length zero) xs := by
-  simp only [zipPairs, List.nil_zipWithAll, Option.getD_none, Option.getD_some]
+lemma nil_padPair (xs : List RawProd) : padPair [] xs = List.zip (List.replicate xs.length zero) xs := by
+  simp only [padPair, padPairF, List.nil_zipWithAll, Option.getD_none, Option.getD_some]
   induction xs with
   | nil => simp only [List.map_nil, List.length_nil, List.replicate_zero, List.zip_nil_right]
   | cons x xx ih =>
@@ -189,25 +193,25 @@ lemma nil_zipPairs (xs : List RawProd) : zipPairs [] xs = List.zip (List.replica
 
 
 @[aesop unsafe]
-lemma zipPairsCases (x y : RawProd) (xs ys : List RawProd) : (x, y) ∈ zipPairs xs ys → (x,y) ∈ List.zip xs ys ∨ x = zero ∨ y = zero := by
+lemma padPair_cases (x y : RawProd) (xs ys : List RawProd) : (x, y) ∈ padPair xs ys → (x,y) ∈ List.zip xs ys ∨ x = zero ∨ y = zero := by
   intro hxy
   --simp_all [zipPairs]
   induction xs generalizing ys with
   | nil =>
-    simp only [nil_zipPairs] at hxy
+    simp only [nil_padPair] at hxy
     apply List.of_mem_zip at hxy
     simp only [List.mem_replicate, ne_eq, List.length_eq_zero_iff] at hxy
     simp_all only [List.zip_nil_left, List.not_mem_nil, true_or, or_true]
   | cons x' xx ihxx =>
       cases ys with
       | nil =>
-        rw [zipPairs_nil] at hxy
+        rw [padPair_nil] at hxy
         apply List.of_mem_zip at hxy
         simp only [List.mem_replicate, ne_eq, List.length_eq_zero_iff] at hxy
         simp only [List.zip_nil_right, hxy.right.right, List.not_mem_nil, or_true]
       | cons y' yy =>
           --apply ihxx yy hxy
-          simp [zipPairs] at hxy ihxx
+          simp [padPair, padPairF] at hxy ihxx
           simp_all only [List.zip_cons_cons, List.mem_cons, Prod.mk.injEq]
           --left
           cases hxy with
@@ -221,7 +225,7 @@ theorem induction₂ -- do i even need this??
  {P : RawProd → RawProd → Prop}
   (h_zero_left  : ∀ y, P zero y)
   (h_zero_right : ∀ x, P x zero)
-  (h_brak_brak  : ∀ xs ys, (∀ p ∈ zipPairs xs ys, P p.1 p.2) → P (brak xs) (brak ys)) :
+  (h_brak_brak  : ∀ xs ys, (∀ p ∈ padPair xs ys, P p.1 p.2) → P (brak xs) (brak ys)) :
   ∀ x y, P x y := by
   intro x y
   induction x using RawProd.induction with

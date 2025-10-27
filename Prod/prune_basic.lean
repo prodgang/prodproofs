@@ -44,7 +44,7 @@ lemma nil_prune_eq_nil (x : RawProd) (hnx : x ≠ zero) : (brak []) ⊓ x = brak
   cases x <;> simp only [prune_raw, List.zipWith_nil_left]
   contradiction
 
-
+@[aesop unsafe]
 lemma brak_prune_brak_neq_zero (xs ys : List RawProd) : (brak xs) ⊓ (brak ys) ≠ zero := by
   simp only [prune_raw, ne_eq, reduceCtorEq, not_false_eq_true]
 
@@ -99,12 +99,12 @@ theorem prune_raw_comm : ∀ x y, x ⊓ y = y ⊓ x := by
       | cons y yy =>
         simp only [prune_raw, List.zipWith_cons_cons, brak.injEq, List.cons.injEq]
         constructor
-        . have hzin : z ∈ z :: zs := by simp only [List.mem_cons, true_or]
-          have hyin : y ∈ y :: yy := by simp only [List.mem_cons, true_or]
-          exact ih z hzin y hyin
+        . apply ih <;> simp only [List.mem_cons, true_or]
         . simp only [prune_raw, brak.injEq] at ihz;
           have ihzs : ∀ x ∈ zs, ∀ y ∈ yy, x.prune_raw y = y.prune_raw x := by intro x hx y hyy; apply ih <;> simp only [List.mem_cons]; right; exact hx; right; exact hyy
           exact ihz yy ihzs
+
+
 
 
 theorem prune_raw_assoc : ∀ x y z, x ⊓ (y ⊓ z) = (x ⊓ y) ⊓ z := by

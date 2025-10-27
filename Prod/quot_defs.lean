@@ -76,6 +76,7 @@ lemma map_eq_of_fixed {α : Type _} (f : α → α) (l : List α)
     simp [hhd, this]
 
 
+-- real ugly lemma
 @[aesop safe]
 lemma map_normalize_trim_of_fixed {xs : List RawProd}
   (h : ∀ x ∈ xs, normalize x = x) :
