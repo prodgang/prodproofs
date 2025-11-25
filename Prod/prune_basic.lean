@@ -1,6 +1,6 @@
 import Prod.quot_defs
-import Mathlib.Data.List.Basic
-import Mathlib.Data.List.Induction
+-- import Mathlib.Data.List.Basic
+-- import Mathlib.Data.List.Induction
 
 namespace RawProd
 
@@ -12,6 +12,7 @@ termination_by x y => size x + size y
 decreasing_by
   simp [size]
   sorry
+
 
 infixl:70 " ⊓ " => prune_raw
 
@@ -55,12 +56,29 @@ lemma brak_prune_brak_neq_zero (xs ys : List RawProd) : (brak xs) ⊓ (brak ys) 
 
 /-- compatibility: if `x ≈ x'` and `y ≈ y'` then `prune_raw x y ≈ prune_raw x' y'`.
     This is the only lemma needed to lift to the quotient. -/
-theorem prune_raw_respects_equiv {x x' y y' : RawProd} (hx : x.equiv x') (hy : y.equiv y') :
+theorem prune_raw_respects_equiv_cases {x x' y y' : RawProd} (hx : x.equiv x') (hy : y.equiv y') :
   (x ⊓ y).equiv (x' ⊓ y') := by
-  have hnx := equiv_normalize_eq x x' hx
-  have hny := equiv_normalize_eq y y' hy
-  simp [equiv]
-  sorry
+  -- have hnx := equiv_normalize_eq x x' hx
+  -- have hny := equiv_normalize_eq y y' hy
+  --simp [equiv]
+  cases x
+  case zero =>
+    have hx'z : x' = zero := by simp only [equiv, normalize_zero_eq_zero] at hx; exact zero_eq_normalize_eq_zero hx
+    simp_all only [normalize_zero_eq_zero, zero_eq_normalize_eq_zero, zero_prune_eq_zero]
+  case brak xs =>
+    cases y
+    case zero =>
+      have hy'z : y' = zero := by simp [equiv, normalize_zero_eq_zero] at hy; exact zero_eq_normalize_eq_zero hy
+      simp_all only [normalize_zero_eq_zero, zero_eq_normalize_eq_zero, prune_zero_eq_zero]
+    case brak ys =>
+      cases x'
+      case zero => absurd hx; exact not_brak_equiv_zero xs
+      case brak xs' =>
+        cases y'
+        case zero => absurd hy; exact not_brak_equiv_zero ys
+        case brak ys' =>
+          simp_all [equiv, normalize]
+          sorry -- induction on all lists?
 
 
 
@@ -146,7 +164,7 @@ open RawProd
 /-- Lift the single `prune_raw` to `QProd`. -/
 def prune (x y : QProd) : QProd :=
   Quotient.liftOn₂ x y (fun a b => mk (RawProd.prune_raw a b)) fun _ _ _ _ hx hy =>
-    Quotient.sound (RawProd.prune_raw_respects_equiv hx hy)
+    Quotient.sound (RawProd.prune_raw_respects_equiv_cases hx hy)
 
 /-- compute on `mk`ed representatives -/
 lemma prune_mk_mk (x y : RawProd) : prune (mk x) (mk y) = mk (RawProd.prune_raw x y) := rfl

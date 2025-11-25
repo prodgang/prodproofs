@@ -1,6 +1,7 @@
 import Prod.raw_defs
 import Init.Data.List.Basic
 import Mathlib.Data.List.DropRight
+import Mathlib.Data.Quot
 
 namespace RawProd
 
@@ -13,10 +14,23 @@ def normalize : RawProd → RawProd
   | zero => zero
   | brak xs => brak (trim (List.map normalize xs))
 
-@[simp]
+--@[simp]
 lemma normalize_zero_eq_zero : normalize zero = zero := by simp only [normalize]
 
-@[simp] lemma trim_nil_eq_nil : trim [] = [] := by simp [trim]
+--@[simp]
+lemma normalize_brak_neq_zero (xs : List RawProd) : normalize (brak xs) ≠ zero := by simp only [normalize, ne_eq, reduceCtorEq, not_false_eq_true]
+
+
+
+--@[simp]
+lemma trim_nil_eq_nil : trim [] = [] := by simp [trim]
+
+-- @[simp] lemma trim_cons (x : RawProd) (xs : List RawProd) (hnz : x ≠ zero) : trim (x :: xs) = x :: trim xs := by
+--   simp [trim]
+
+--@[simp]
+lemma trim_append_brak_eq_self (xs ys: List RawProd): trim ( xs ++  [brak ys]) = xs ++ [brak ys] := by
+  simp only [trim, beq_iff_eq, reduceCtorEq, not_false_eq_true, List.rdropWhile_concat_neg]
 
 -- The equiv definition stays the same:
 -- def equiv_old (x y : RawProd) : Prop :=
@@ -58,13 +72,13 @@ lemma equiv_normalize_eq : ∀ x y, equiv x y → normalize x = normalize y := b
     simp only [normalize]
     congr 1
 
-@[simp]
+--@[simp]
 lemma trim_idem (xs : List RawProd) : trim (trim xs) = trim xs := by
   apply List.rdropWhile_idempotent
 
 
 -- auxiliary lemma: if f fixes every element of l, then map f l = l
-lemma map_eq_of_fixed {α : Type _} (f : α → α) (l : List α)
+lemma map_eq_of_fixed_blah {α : Type _} (f : α → α) (l : List α)
     (H : ∀ x ∈ l, f x = x) : (l.map f) = l := by
   induction l with
   | nil => simp
@@ -76,88 +90,35 @@ lemma map_eq_of_fixed {α : Type _} (f : α → α) (l : List α)
     simp [hhd, this]
 
 
--- real ugly lemma
-@[aesop safe]
-lemma map_normalize_trim_of_fixed {xs : List RawProd}
-  (h : ∀ x ∈ xs, normalize x = x) :
-  List.map normalize (trim xs) = trim xs := by
-  -- right-to-left induction on xs
-  induction xs using List.reverseRecOn with
-  | nil =>
-    -- trim [] = [], map [] = []
-    simp only [trim, List.rdropWhile_nil, List.map_nil]
-  | append_singleton as a ih =>
-    -- h : ∀ x ∈ as ++ [a], normalize x = x
-    -- build the restricted hypothesis for `as`
-    let H_as : ∀ x ∈ as, normalize x = x := fun x hx =>
-      -- as ⊆ as ++ [a], so use h on the appended list
-      h x (List.mem_append.2 (Or.inl hx))
+lemma append_eq_imp_eq_eq (xs ys : List RawProd) (x y : RawProd) (h1 : xs = ys) (h2: x = y) : xs.append [x] = ys.append [y] := by
+  subst h2 h1
+  simp_all only [List.append_eq]
 
-    -- split on whether `a` is a zero (rdropWhile drops trailing zeros)
-    by_cases ha : (a == RawProd.zero)
-    · -- case: a is dropped, rdropWhile (as ++ [a]) = as.rdropWhile
-      have concat_rule := List.rdropWhile_concat (. == zero) as a
-      have eq1 : (as ++ [a]).rdropWhile (. == zero) = as.rdropWhile (. == zero) := by
-        simp [concat_rule, ha]
-      -- apply IH to as
-      calc
-        List.map normalize ((as ++ [a]).rdropWhile (. == zero)) = List.map normalize (as.rdropWhile (. == zero)) := by rw [eq1]
-        _ = as.rdropWhile (. == zero) := by apply ih; exact H_as
-      simp_all only [trim, List.mem_append, List.mem_cons, List.not_mem_nil, or_false, true_or, implies_true, forall_const, beq_iff_eq, BEq.rfl, List.rdropWhile_concat_pos, ↓reduceIte]
-
-    · -- case: a is kept, rdropWhile (as ++ [a]) = as ++ [a]
-      have concat_rule := List.rdropWhile_concat (. == zero) as a
-      have eq2 : (as ++ [a]).rdropWhile (. == zero) = as ++ [a] := by
-        simp [concat_rule, ha]
-      -- use h (the full hypothesis) to show each element of `as ++ [a]` is fixed by `normalize`
-      have H_full : ∀ x ∈ (as ++ [a]), normalize x = x := h
-      -- deduce map normalize (as ++ [a]) = as ++ [a] by splitting the append and using map_eq_of_fixed on `as`
-      have map_as_eq : (as.map normalize) = as := by
-        apply map_eq_of_fixed normalize as
-        intro x hx
-        -- get membership of x in as ++ [a]
-        have : x ∈ as ++ [a] := List.mem_append.2 (Or.inl hx)
-        exact H_full x this
-      -- deduce normalize a = a from H_full
-      have norm_a : normalize a = a := by
-        have : a ∈ as ++ [a] := List.mem_append.2 (Or.inr (by simp))
-        exact H_full a this
-      -- combine
-      calc
-        List.map normalize ((as ++ [a]).rdropWhile (. == zero)) = List.map normalize (as ++ [a]) := by rw [eq2]
-        _ = as.map normalize ++ [normalize a] := by simp [List.map]
-        _ = as ++ [a] := by simp [map_as_eq, norm_a]
-      simp [trim]
-      simp_all only [List.mem_append, List.mem_cons, List.not_mem_nil, or_false, true_or, implies_true, forall_const, beq_iff_eq, ↓reduceIte, not_false_eq_true, List.rdropWhile_concat_neg, or_true]
-
-
-
-
-@[aesop safe]
 lemma normalize_idem (x : RawProd) : normalize (normalize x) = normalize x := by
   induction x using RawProd.induction with
   | h_zero => simp only [normalize_zero_eq_zero]
   | h_brak xs ih =>
-    simp [normalize]
-    let A := xs.map (fun t => normalize t)
-    -- show each element of A is fixed by normalize
-    have fixedA : ∀ a ∈ A, normalize a = a := by
-      intro a ha
-      rcases List.mem_map.1 ha with ⟨orig, hmem_orig, heq⟩
-      calc
-        normalize a = normalize (normalize orig) := by rw [←heq]
-        _ = normalize orig := ih orig hmem_orig
-        _ = a := by rw [heq]
-    -- apply lemma to get map normalize (trim A) = trim A
-    have map_on_trim : List.map normalize (trim A) = trim A := map_normalize_trim_of_fixed fixedA
-    -- finish by rewriting with map_on_trim and trim_idem
-    rw [map_on_trim, trim_idem]
+    induction xs using List.reverseRecOn with
+    | nil => simp only [normalize, List.map_nil, trim_nil_eq_nil]
+    | append_singleton xx x ihxx =>
+      simp_all [normalize]
+      cases x
+      case zero => simp_all only [trim, normalize_zero_eq_zero, BEq.rfl, List.rdropWhile_concat_pos];
+      case brak xx' =>
+        simp_all only [normalize, trim_append_brak_eq_self, List.map_append, List.map_map, List.map_cons, List.map_nil]
+        rw [← List.append_eq, ← List.append_eq]
+        apply append_eq_imp_eq_eq
+        . simp only [List.map_inj_left, Function.comp_apply]; intro a ha; apply ih; left; exact ha
+        . -- could be cleaner but does the job
+          have hxx : (brak xx').normalize.normalize = (brak xx').normalize := by apply ih; right; rfl
+          simp only [normalize] at hxx
+          exact hxx
 
-@[aesop safe]
+--@[aesop safe]
 lemma equiv_of_normalize (x : RawProd) : (normalize x).equiv x := by
   simp [equiv, normalize_idem]
 
-@[aesop unsafe 10%]
+--@[aesop unsafe 10%]
 lemma brak_map_normalize (xs : List RawProd) :
      (brak (List.map normalize xs)).equiv (brak xs) := by
   simp [equiv, normalize]
@@ -166,7 +127,7 @@ lemma brak_map_normalize (xs : List RawProd) :
 
 
 
-@[simp]
+--@[simp]
 lemma trim_append_zero (xs : List RawProd) : trim (xs ++ [zero]) = trim xs := by
   induction xs with
   | nil => simp [trim]
@@ -176,7 +137,7 @@ lemma trim_append_zero (xs : List RawProd) : trim (xs ++ [zero]) = trim xs := by
     rfl
 
 
-@[aesop safe]
+--@[aesop safe]
 lemma trim_length_leq (xs : List RawProd) : (trim xs).length ≤ xs.length := by
   simp [trim, List.rdropWhile]
   have h : (List.dropWhile (fun x ↦ x == zero) xs.reverse).length ≤ xs.reverse.length := by apply List.length_dropWhile_le (. == zero) xs.reverse
@@ -186,53 +147,153 @@ lemma trim_length_leq (xs : List RawProd) : (trim xs).length ≤ xs.length := by
 
 
 
-@[simp]
+--@[simp]
 lemma trim_brak_eq_brak (xs : List RawProd) : trim [brak xs] = [brak xs] := by
   rfl
 
-@[simp]
-lemma trim_append_brak_eq_brak (xs ys : List RawProd) :  trim (xs ++ [brak ys]) = (xs ++ [brak ys]) := by
-  simp only [trim, beq_iff_eq, reduceCtorEq, not_false_eq_true, List.rdropWhile_concat_neg]
+-- @[simp]
+-- lemma trim_append_brak_eq_brak (xs ys : List RawProd) :  trim (xs ++ [brak ys]) = (xs ++ [brak ys]) := by
+--   simp only [trim, beq_iff_eq, reduceCtorEq, not_false_eq_true, List.rdropWhile_concat_neg]
 
 
 lemma trim_append_brak_neq_nil (xs ys : List RawProd) : trim (xs ++ [brak ys]) ≠ [] := by
   simp only [trim, beq_iff_eq, reduceCtorEq, not_false_eq_true, List.rdropWhile_concat_neg, ne_eq,
     List.append_eq_nil_iff, List.cons_ne_self, and_false]
 
+def allzero (xs : List RawProd ): Prop := xs = List.replicate xs.length zero
+
+instance decidable_allzero (xs : List RawProd) [DecidableEq RawProd] :
+  Decidable (allzero xs) := by
+  dsimp [allzero]
+  infer_instance
+
+/-another definition-/
+lemma allzero_iff {xs : List RawProd} : allzero xs ↔ ∀ x ∈ xs, x = zero := by
+  simp only [allzero]
+  constructor
+  . intro haz --x hx
+    apply (List.eq_replicate_iff.mp haz).2
+  . intro h
+    apply List.eq_replicate_iff.mpr
+    constructor
+    . rfl
+    . exact h
 
 
+lemma not_allzero_append_zero {xs : List RawProd} (hnaz: ¬ RawProd.allzero (xs ++ [zero])) : ¬ RawProd.allzero xs := by
+  simp_all [allzero]
+  by_contra haz
 
-lemma trim_eq_nil_iff (xs : List RawProd) : trim xs = [] ↔ ∀ x ∈ xs, x = zero := by
+  have hazz : List.replicate (xs.length + 1) zero = xs ++ [zero] := by
+    rw [haz]
+    apply List.replicate_eq_append_iff.mpr
+    constructor
+    simp only [List.length_replicate, List.length_cons, List.length_nil, Nat.zero_add]
+    constructor
+    simp only [List.length_replicate]
+    simp only [List.length_cons, List.length_nil, Nat.zero_add, List.replicate_one]
+
+  exact hnaz hazz.symm
+
+lemma trim_eq_nil_iff (xs : List RawProd) : trim xs = [] ↔ RawProd.allzero xs := by
   induction xs using List.reverseRecOn with
-  | nil => simp only [trim_nil_eq_nil, List.not_mem_nil, IsEmpty.forall_iff, implies_true]
+  | nil => simp only [allzero, trim_nil_eq_nil, List.length_nil, List.replicate_zero]
   | append_singleton ys y ih =>
     constructor
     . intro htrim
       cases y
-      . simp_all only [trim_append_zero, List.mem_append, List.mem_cons, List.not_mem_nil, or_false]
-        intro z hz
-        cases hz with
-        | inl hin => exact (htrim z hin)
-        | inr hze => exact hze
-      . intro z zs
+      . simp only [allzero, List.length_append, List.length_cons, List.length_nil, Nat.zero_add, List.replicate_succ', List.append_cancel_right_eq]
+        simp only [trim_append_zero] at htrim
+        exact ih.mp htrim
+      . rename_i zs
         absurd htrim
         apply trim_append_brak_neq_nil
     . intro heqz
-      simp_all only [List.mem_append, List.mem_cons, List.not_mem_nil, or_false, or_true, true_or, implies_true, iff_true, trim_append_zero]
+      --simp_all only [List.mem_append, List.mem_cons, List.not_mem_nil, or_false, or_true, true_or, implies_true, iff_true, trim_append_zero]
+      simp_all only [allzero, List.length_append, List.length_cons, List.length_nil, Nat.zero_add]
+      simp only [List.replicate_succ', List.append_singleton_inj, trim_append_zero] at heqz ⊢
+      have h :=  ih.mpr heqz.1
+      rw [heqz.1] at h
+      exact h
 
 
 
 
-lemma append_trim_eq_imply_neq_zero (xs : List RawProd) (y : RawProd) (h : trim (xs ++ [y]) = xs ++ [y] ) : y ≠ zero := by
-  cases y
-  case zero =>
-    have h2 : (trim xs).length < (xs ++ [zero]).length :=
-      -- idk if this is the cleanest but I wanted to try out calc
-      calc (trim xs).length ≤ xs.length := trim_length_leq xs
-           _      < (xs ++ [zero]).length := by simp only [List.length_append, List.length_cons, List.length_nil, zero_add, lt_add_iff_pos_right, zero_lt_one]
-    simp_all only [trim_append_zero, List.length_append, List.length_cons, List.length_nil, zero_add, lt_self_iff_false]
 
-  case brak y => simp only [ne_eq, reduceCtorEq, not_false_eq_true]
+
+lemma zero_eq_normalize_eq_zero {x : RawProd} (heqz : zero = x.normalize ) : x = zero := by
+  cases x <;> simp_all only [normalize, normalize_zero_eq_zero, reduceCtorEq]
+
+lemma normalize_eq_zero_eq_zero {x : RawProd} (heqz : x.normalize = zero ) : x = zero := by
+  cases x <;> simp_all only [normalize, normalize_zero_eq_zero, reduceCtorEq]
+
+ lemma not_brak_equiv_zero (xs : List RawProd) : ¬ (brak xs).equiv zero := by
+  simp only [equiv, normalize_zero_eq_zero, normalize_brak_neq_zero, not_false_eq_true]
+
+ lemma not_zero_equiv_brak (xs : List RawProd) : ¬ zero.equiv (brak xs) := by
+  simp only [equiv, normalize_zero_eq_zero, normalize, reduceCtorEq, not_false_eq_true]
+
+
+--@[simp]
+lemma trim_replicate_zero_eq_nil (n : ℕ ) : trim (List.replicate n zero) = [] := by
+  induction n with
+  | zero => simp only [List.replicate_zero, trim_nil_eq_nil]
+  | succ n ih => simp only [trim, List.rdropWhile_eq_nil_iff, List.mem_replicate, ne_eq,
+    Nat.add_eq_zero_iff, Nat.succ_ne_self, and_false, not_false_eq_true, true_and, beq_iff_eq,
+    imp_self, implies_true]
+
+
+
+/- (hopefully) the reverse induction to end them all -/
+lemma trim_cons {x : RawProd} {xs : List RawProd} : trim (x::xs) = if (allzero (x::xs)) then [] else x :: trim xs := by
+  split_ifs
+  case pos hpos => exact (trim_eq_nil_iff (x::xs)).mpr hpos
+  case neg hneg =>
+    induction xs using List.reverseRecOn with
+    | nil =>
+      rw [trim_nil_eq_nil]
+      simp only [trim, List.rdropWhile_eq_self_iff, ne_eq, List.cons_ne_self, not_false_eq_true, List.getLast_singleton, beq_iff_eq, forall_const]
+      simp only [allzero, List.length_cons, List.length_nil, Nat.zero_add, List.replicate_one, List.cons.injEq, and_true] at hneg
+      exact hneg
+    | append_singleton xh xt ih =>
+      rw [← List.cons_append] at ⊢ hneg
+      cases xt
+      . -- xt = zero
+        rw [trim_append_zero, trim_append_zero]
+        --rw [← List.cons_append] at hneg
+        have htneg := not_allzero_append_zero hneg
+        exact ih htneg
+      . -- xt = brak
+        simp only [trim_append_brak_eq_self]
+        simp only [List.cons_append]
+
+
+lemma cons_equiv_cons {x y : RawProd} {xs ys : List RawProd} :
+    x.equiv y → (brak xs).equiv (brak ys) → (brak (x :: xs)).equiv (brak (y :: ys)) := by
+    intro hxy hbb
+    simp_all only [equiv, normalize, brak.injEq, List.map_cons]
+    simp only [trim_cons]
+    split_ifs
+    . -- [] = []
+      rfl
+    . --xs [] ??
+      rename_i hxs hys
+      have hy_z : y.normalize = zero := by rw [allzero_iff] at hxs; exact hxs y.normalize (List.mem_cons_self)
+      have hxs_az : allzero (List.map normalize xs) := by rw [allzero_iff] at hxs ⊢; intro x' hx'; apply hxs; apply List.mem_cons_of_mem; exact hx'   -- use hxs and some mem_cons situation
+      have hys_az : allzero (List.map normalize ys) := by have hxs_nil := (trim_eq_nil_iff (List.map normalize xs)).mpr hxs_az; rw [hxs_nil] at hbb; apply (trim_eq_nil_iff (List.map normalize ys)).mp; exact hbb.symm -- use hx_az and hbb
+      have h_fin : allzero (y.normalize :: List.map normalize ys) := by simp [allzero, List.length_cons, List.length_map] at ⊢ hys_az; rw [hy_z, hys_az]; simp only [List.replicate_succ]
+      exact hys h_fin
+    . -- [] ys (symm of above)
+      rename_i hxs hys
+      have hy_z : y.normalize = zero := by rw [allzero_iff] at hys; exact hys y.normalize (List.mem_cons_self)
+      have hys_az : allzero (List.map normalize ys) := by rw [allzero_iff] at hys ⊢; intro x' hx'; apply hys; apply List.mem_cons_of_mem; exact hx'   -- use hxs and some mem_cons situation
+      have hxs_az : allzero (List.map normalize xs) := by have hxs_nil := (trim_eq_nil_iff (List.map normalize ys)).mpr hys_az; rw [hxs_nil] at hbb; apply (trim_eq_nil_iff (List.map normalize xs)).mp; exact hbb -- use hx_az and hbb
+      have h_fin : allzero (y.normalize :: List.map normalize xs) := by simp [allzero, List.length_cons, List.length_map] at ⊢ hys_az; rw [hy_z, hxs_az]; simp only [List.length_map, List.replicate_succ]
+      exact hxs h_fin
+    . simp only [List.cons.injEq, true_and]
+      exact hbb
+
+
 
 
 end RawProd
@@ -257,9 +318,11 @@ def normalize : QProd → RawProd :=
 def ofList (xs : List QProd) : QProd :=
   mk (RawProd.brak (xs.map normalize))
 
-@[simp] lemma brak_eq_mk (x : RawProd) : ⟦x⟧ = mk x := by rfl
+--@[simp]
+lemma brak_eq_mk (x : RawProd) : ⟦x⟧ = mk x := by rfl
 
-@[simp] lemma zero_eq_zero : mk RawProd.zero = QProd.zero := by rfl
+--@[simp]
+lemma zero_eq_zero : mk RawProd.zero = QProd.zero := by rfl
 
 lemma ofList_map_mk_eq_mk_brak (xs : List RawProd) :
     ofList (List.map mk xs) = mk (RawProd.brak xs) := by

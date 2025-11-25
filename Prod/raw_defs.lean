@@ -1,5 +1,5 @@
 import Mathlib.Data.List.Basic
-import Mathlib.Tactic
+-- import Mathlib.Tactic
 
 /-- Raw productive numbers before quotient -/
 inductive RawProd where
@@ -157,31 +157,17 @@ theorem strong_induction₃
         exact ih_x x' hx y' z'
 
 
-@[simp]
-def padPairF {α : Type _} (f : RawProd → RawProd → α) : List RawProd → List RawProd → List α
+--@[simp]
+def padWith {α : Type _} (f : RawProd → RawProd → α) : List RawProd → List RawProd → List α
   | xs, ys => xs.zipWithAll (fun oa ob => (f (oa.getD zero) (ob.getD zero))) ys
 
 /- takes two lists and creates a list of pairs, padding shorter list with zeros-/
-def padPair : List RawProd → List RawProd → List (RawProd × RawProd)
-  | xs, ys => padPairF (fun x y => (x,y)) xs ys
+def pad : List RawProd → List RawProd → List (RawProd × RawProd)
+  | xs, ys => padWith (fun x y => (x,y)) xs ys
 
 
-
-
-@[simp]
-lemma padPair_nil (xs : List RawProd) : padPair xs [] = List.zip xs (List.replicate xs.length zero) := by
-  simp only [padPair, padPairF, List.zipWithAll_nil, Option.getD_some, Option.getD_none]
-  induction xs with
-  | nil => simp only [List.map_nil, List.length_nil, List.replicate_zero, List.zip_nil_right]
-  | cons x xx ih =>
-    simp only [List.map_cons, List.length_cons]
-    rw [List.replicate_succ]
-    simp only [List.zip_cons_cons, List.cons.injEq, true_and]
-    exact ih
-
-@[simp]
-lemma nil_padPair (xs : List RawProd) : padPair [] xs = List.zip (List.replicate xs.length zero) xs := by
-  simp only [padPair, padPairF, List.nil_zipWithAll, Option.getD_none, Option.getD_some]
+lemma pad_nil (xs : List RawProd) : pad xs [] = List.zip xs (List.replicate xs.length zero) := by
+  simp only [pad, padWith, List.zipWithAll_nil, Option.getD_some, Option.getD_none]
   induction xs with
   | nil => simp only [List.map_nil, List.length_nil, List.replicate_zero, List.zip_nil_right]
   | cons x xx ih =>
@@ -191,50 +177,113 @@ lemma nil_padPair (xs : List RawProd) : padPair [] xs = List.zip (List.replicate
     exact ih
 
 
+lemma nil_pad (xs : List RawProd) : pad [] xs = List.zip (List.replicate xs.length zero) xs := by
+  simp only [pad, padWith, List.nil_zipWithAll, Option.getD_none, Option.getD_some]
+  induction xs with
+  | nil => simp only [List.map_nil, List.length_nil, List.replicate_zero, List.zip_nil_right]
+  | cons x xx ih =>
+    simp only [List.map_cons, List.length_cons]
+    rw [List.replicate_succ]
+    simp only [List.zip_cons_cons, List.cons.injEq, true_and]
+    exact ih
 
-@[aesop unsafe]
-lemma padPair_cases (x y : RawProd) (xs ys : List RawProd) : (x, y) ∈ padPair xs ys → (x,y) ∈ List.zip xs ys ∨ x = zero ∨ y = zero := by
-  intro hxy
-  --simp_all [zipPairs]
-  induction xs generalizing ys with
+
+lemma pad_cases_strong {p : RawProd × RawProd} {xs ys : List RawProd} (hxy : p ∈ pad xs ys ) :  p ∈ List.zip xs ys ∨ (p.1 = zero ∧ p.2 ∈ ys) ∨ (p.1 ∈ xs ∧ p.2 = zero) := by
+induction xs generalizing ys with
   | nil =>
-    simp only [nil_padPair] at hxy
+    simp only [nil_pad] at hxy
     apply List.of_mem_zip at hxy
     simp only [List.mem_replicate, ne_eq, List.length_eq_zero_iff] at hxy
-    simp_all only [List.zip_nil_left, List.not_mem_nil, true_or, or_true]
+    simp_all only [List.zip_nil_left, List.not_mem_nil, and_self, false_and, or_false, or_true]
   | cons x' xx ihxx =>
       cases ys with
       | nil =>
-        rw [padPair_nil] at hxy
+        rw [pad_nil] at hxy
         apply List.of_mem_zip at hxy
         simp only [List.mem_replicate, ne_eq, List.length_eq_zero_iff] at hxy
-        simp only [List.zip_nil_right, hxy.right.right, List.not_mem_nil, or_true]
+        simp only [List.zip_nil_right, List.not_mem_nil, hxy.right.right, and_false, List.mem_cons,
+          and_true, false_or]
+        rw [← List.mem_cons]
+        exact hxy.left
+
       | cons y' yy =>
           --apply ihxx yy hxy
-          simp [padPair, padPairF] at hxy ihxx
-          simp_all only [List.zip_cons_cons, List.mem_cons, Prod.mk.injEq]
+          simp only [pad, padWith, List.zipWithAll_cons_cons, Option.getD_some, List.mem_cons] at hxy ihxx
+          simp_all only [List.zip_cons_cons, List.mem_cons]
           --left
           cases hxy with
-          | inl h => simp_all only [and_self, true_or]
-          | inr h_1 => sorry --simp [ihxx]
+          | inl h => simp_all only [true_or]
+          | inr h_1 =>
+            cases (ihxx h_1) with
+            | inl l => left; right; exact l
+            | inr r =>
+                    right
+                    obtain ⟨fst, snd⟩ := p
+                    simp_all only
+                    cases r with
+                    | inl h => simp_all only [true_and, or_true, and_self, true_or]
+                    | inr h_2 => simp_all only [and_self, or_true, implies_true]
 
-  -- waht i want is (x,y) in zipPairs -> (x,y) in zip or x = zero or y = zero
+-- lemma pad_cases {p : RawProd × RawProd} {xs ys : List RawProd} (hxy : p ∈ pad xs ys ) :  p ∈ List.zip xs ys ∨ p.1 = zero ∨ p.2 = zero := by
+--   --intro hxy
+--   --simp_all [zipPairs]
+--   induction xs generalizing ys with
+--   | nil =>
+--     simp only [nil_pad] at hxy
+--     apply List.of_mem_zip at hxy
+--     simp only [List.mem_replicate, ne_eq, List.length_eq_zero_iff] at hxy
+--     simp_all only [List.zip_nil_left, List.not_mem_nil, true_or, or_true]
+--   | cons x' xx ihxx =>
+--       cases ys with
+--       | nil =>
+--         rw [pad_nil] at hxy
+--         apply List.of_mem_zip at hxy
+--         simp only [List.mem_replicate, ne_eq, List.length_eq_zero_iff] at hxy
+--         simp only [List.zip_nil_right, hxy.right.right, List.not_mem_nil, or_true]
+--       | cons y' yy =>
+--           --apply ihxx yy hxy
+--           simp only [pad, padWith, List.zipWithAll_cons_cons, Option.getD_some, List.mem_cons] at hxy ihxx
+--           simp_all only [List.zip_cons_cons, List.mem_cons]
+--           --left
+--           cases hxy with
+--           | inl h => simp_all only [true_or]
+--           | inr h_1 =>
+--             cases (ihxx h_1) with
+--             | inl l => left; right; exact l
+--             | inr r => right; exact r
 
 
-theorem induction₂ -- do i even need this??
- {P : RawProd → RawProd → Prop}
-  (h_zero_left  : ∀ y, P zero y)
-  (h_zero_right : ∀ x, P x zero)
-  (h_brak_brak  : ∀ xs ys, (∀ p ∈ padPair xs ys, P p.1 p.2) → P (brak xs) (brak ys)) :
-  ∀ x y, P x y := by
-  intro x y
-  induction x using RawProd.induction with
-  | h_zero => exact h_zero_left y
-  | h_brak xs ihx =>
-    induction y using RawProd.induction with
-    | h_zero => exact h_zero_right (brak xs)
-    | h_brak ys ihy =>
-        sorry
+--@[simp]
+ lemma pad_nil_cons (x : RawProd) (xs : List RawProd) : pad [] (x::xs) = (zero, x) :: pad [] xs := by
+  simp only [nil_pad, List.length_cons, List.replicate_succ, List.zip_cons_cons]
+
+--@[simp]
+lemma pad_cons_nil (x : RawProd) (xs : List RawProd) : pad (x::xs) [] = (x, zero) :: pad xs [] := by
+  simp only [pad_nil, List.length_cons, List.replicate_succ, List.zip_cons_cons]
+
+
+--@[simp]
+ lemma pad_cons_cons (x y : RawProd) (xs ys : List RawProd) : pad (x::xs) (y::ys) = (x,y) :: (pad xs ys) := by
+  simp only [pad, padWith, List.zipWithAll_cons_cons, Option.getD_some]
+
+
+
+
+
+-- theorem induction₂ -- pairwise not strong, do i even need this??
+--  {P : RawProd → RawProd → Prop}
+--   (h_zero_left  : ∀ y, P zero y)
+--   (h_zero_right : ∀ x, P x zero)
+--   (h_brak_brak  : ∀ xs ys, (∀ p ∈ padPair xs ys, P p.1 p.2) → P (brak xs) (brak ys)) :
+--   ∀ x y, P x y := by
+--   intro x y
+--   induction x using RawProd.induction with
+--   | h_zero => exact h_zero_left y
+--   | h_brak xs ihx =>
+--     induction y using RawProd.induction with
+--     | h_zero => exact h_zero_right (brak xs)
+--     | h_brak ys ihy =>
+--         sorry
         -- P : RawProd → RawProd → Prop
         -- h_zero_left : ∀ (y : RawProd), P zero y
         -- h_zero_right : ∀ (x : RawProd), P x zero

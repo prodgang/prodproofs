@@ -2,8 +2,8 @@ import Prod.raw_defs
 import Prod.quot_defs
 import Mathlib.Data.Nat.Prime.Basic
 import Mathlib.Data.Nat.Nth
-import Mathlib.Data.Nat.Factorization.Basic
-import Mathlib.NumberTheory.PrimeCounting
+-- import Mathlib.Data.Nat.Factorization.Basic
+-- import Mathlib.NumberTheory.PrimeCounting
 
 namespace RawProd
 

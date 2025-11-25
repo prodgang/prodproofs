@@ -21,10 +21,10 @@ theorem distrib : ∀ x y z, x ⊓ (y ⊔ z) = (x ⊓ y) ⊔ (x ⊓ z) := by
         cases zs with
         | nil => simp only [ne_eq, reduceCtorEq, not_false_eq_true, graft_nil_eq_self, prune_nil_eq_nil, brak_prune_brak_neq_zero]
         | cons z zz =>
-          simp only [graft_raw, padPairF, List.zipWithAll_cons_cons, Option.getD_some, prune_raw, List.zipWith_cons_cons, brak.injEq, List.cons.injEq]
+          simp only [graft_raw, padWith, List.zipWithAll_cons_cons, Option.getD_some, prune_raw, List.zipWith_cons_cons, brak.injEq, List.cons.injEq]
           constructor
           . apply ih <;> simp only [List.mem_cons, true_or]
-          . simp only [graft_raw, padPairF, prune_raw, brak.injEq] at ihxx
+          . simp only [graft_raw, padWith, prune_raw, brak.injEq] at ihxx
             simp_all only [List.mem_cons, forall_eq_or_imp, implies_true]
 
 
@@ -41,7 +41,7 @@ theorem absorption1 : ∀ x y, x ⊔ (x ⊓ y) = x := by
       cases ys with
       | nil => simp only [ne_eq, reduceCtorEq, not_false_eq_true, prune_nil_eq_nil, graft_nil_eq_self]
       | cons y yy =>
-        simp only [prune_raw, padPairF, List.zipWith_cons_cons, graft_raw, List.zipWithAll_cons_cons, Option.getD_some, brak.injEq, List.cons.injEq]
+        simp only [prune_raw, padWith, List.zipWith_cons_cons, graft_raw, List.zipWithAll_cons_cons, Option.getD_some, brak.injEq, List.cons.injEq]
         constructor
         . apply ih <;> simp only [List.mem_cons, true_or]
         . simp only [graft_raw, prune_raw, brak.injEq] at ihz;
@@ -62,7 +62,7 @@ theorem absorption2 : ∀ x y, x ⊓ (x ⊔ y) = x := by
       cases ys with
       | nil => simp only [ne_eq, reduceCtorEq, not_false_eq_true, graft_nil_eq_self, prune_raw_idem]
       | cons y yy =>
-        simp only [prune_raw, padPairF, List.zipWith_cons_cons, graft_raw, List.zipWithAll_cons_cons, Option.getD_some, brak.injEq, List.cons.injEq]
+        simp only [prune_raw, padWith, List.zipWith_cons_cons, graft_raw, List.zipWithAll_cons_cons, Option.getD_some, brak.injEq, List.cons.injEq]
         constructor
         . apply ih <;> simp only [List.mem_cons, true_or]
         . simp only [graft_raw, prune_raw, brak.injEq] at ihz;

@@ -6,7 +6,7 @@ namespace RawProd
 
 def graft_raw : RawProd → RawProd → RawProd
   | brak xs, brak ys =>
-      brak (padPairF graft_raw xs ys)
+      brak (padWith graft_raw xs ys)
   | zero, y => y
   | x, zero => x
 termination_by x y => x.size + y.size
@@ -28,13 +28,13 @@ lemma graft_zero_eq_self (x : RawProd) : x ⊔ zero = x := by
 
 @[simp]
 lemma brak_graft_nil_eq_self (xs : List RawProd) : (brak xs) ⊔ (brak []) = brak xs := by
-    simp only [graft_raw, padPairF]
+    simp only [graft_raw, padWith]
     simp_all only [List.zipWithAll_nil, Option.getD_some, Option.getD_none, graft_zero_eq_self, List.map_id_fun', id_eq]
 
 
 @[simp]
 lemma brak_nil_graft_eq_self (xs : List RawProd) : (brak []) ⊔ (brak xs) = brak xs := by
-  simp only [graft_raw, padPairF]
+  simp only [graft_raw, padWith]
   cases xs
   . simp only [List.zipWithAll_nil, Option.getD_some, Option.getD_none, graft_zero_eq_self,
     List.map_nil]
@@ -73,7 +73,7 @@ theorem graft_raw_idem (x : RawProd) : x ⊔ x = x := by
     | cons y ys ihy =>
       simp_all only [List.mem_cons, or_true, implies_true, forall_const, forall_eq_or_imp]
       obtain ⟨left, right⟩ := ih
-      simp only [graft_raw, padPairF, List.zipWithAll_cons_cons, Option.getD_some, brak.injEq, List.cons.injEq]
+      simp only [graft_raw, padWith, List.zipWithAll_cons_cons, Option.getD_some, brak.injEq, List.cons.injEq]
       constructor
       . exact left
       . simp only [graft_raw, brak.injEq] at ihy
@@ -93,7 +93,7 @@ theorem graft_raw_comm : ∀ x y, x ⊔ y = y ⊔ x := by
       cases ys with
       | nil => simp only [ne_eq, reduceCtorEq, not_false_eq_true, graft_nil_eq_self, nil_prune_eq_self]
       | cons y yy =>
-        simp only [graft_raw, padPairF, List.zipWithAll_cons_cons, Option.getD_some, brak.injEq, List.cons.injEq]
+        simp only [graft_raw, padWith, List.zipWithAll_cons_cons, Option.getD_some, brak.injEq, List.cons.injEq]
         constructor
         . apply ih <;> simp only [List.mem_cons, true_or]
         . simp only [graft_raw, brak.injEq] at ihz;
@@ -117,7 +117,7 @@ theorem graft_raw_assoc : ∀ x y z, x ⊔ (y ⊔ z) = (x ⊔ y) ⊔ z := by
       | nil =>
         simp only [ne_eq, reduceCtorEq, not_false_eq_true, nil_prune_eq_self, graft_nil_eq_self]
       | cons y yy =>
-        simp only [graft_raw, padPairF, List.zipWithAll_cons_cons, Option.getD_some, brak.injEq]
+        simp only [graft_raw, padWith, List.zipWithAll_cons_cons, Option.getD_some, brak.injEq]
         cases zs with
         | nil => simp only [List.zipWithAll_nil, Option.getD_some, Option.getD_none, graft_zero_eq_self, List.map_cons, List.map_id_fun', id_eq, List.zipWithAll_cons_cons]
         | cons z zz =>
