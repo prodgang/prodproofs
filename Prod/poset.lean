@@ -1,5 +1,6 @@
 import Prod.quot_defs
 import Mathlib.Data.Prod.Basic
+import Mathlib.Order.Defs.PartialOrder
 
 namespace RawProd
 
@@ -19,7 +20,7 @@ decreasing_by
 scoped infixl:50 " ⊑ " => pleq_raw
 
 
-lemma zero_pleq (x : RawProd) : zero ⊑ x := by
+lemma zero_pleq {x : RawProd} : zero ⊑ x := by
   simp only [pleq_raw]
 
 lemma pleq_zero_eq_zero {x : RawProd} (hleq : x ⊑ zero) : x = zero := by
@@ -27,7 +28,7 @@ lemma pleq_zero_eq_zero {x : RawProd} (hleq : x ⊑ zero) : x = zero := by
   | zero => rfl
   | brak xs  => simp_all only [pleq_raw]
 
-lemma nil_pleq_brak (xs : List RawProd) : brak [] ⊑ brak xs := by
+lemma nil_pleq_brak {xs : List RawProd} : brak [] ⊑ brak xs := by
   induction xs with
   | nil => simp only [pleq_raw, pad_nil, List.length_nil, List.replicate_zero, List.zip_nil_right, List.not_mem_nil, IsEmpty.forall_iff, implies_true]
   | cons x xx ih =>
@@ -36,9 +37,16 @@ lemma nil_pleq_brak (xs : List RawProd) : brak [] ⊑ brak xs := by
 
 lemma brak_pleq_brak (xs ys : List RawProd) (hl: brak xs ⊑ brak ys) : (∀ p ∈ pad xs ys, p.1 ⊑ p.2) := by simp only [pleq_raw, Prod.forall] at hl; intro p hp; exact hl p.1 p.2 hp
 
-lemma cons_pleq_cons {x y : RawProd} {xs ys : List RawProd} (hp: brak (x::xs) ⊑ brak (y::ys)) : x ⊑ y ∧ brak xs ⊑ brak ys := by
-  simp_all only [pleq_raw, pad_cons_cons, List.mem_cons, forall_eq_or_imp, Prod.forall, Prod.mk.eta,
-    implies_true, and_self]
+lemma cons_pleq_cons_iff {x y : RawProd} {xs ys : List RawProd} : brak (x::xs) ⊑ brak (y::ys) ↔  x ⊑ y ∧ brak xs ⊑ brak ys := by
+  constructor
+  . simp_all only [pleq_raw, pad_cons_cons, List.mem_cons, forall_eq_or_imp, Prod.forall, Prod.mk.eta, implies_true, and_self]
+  . intro hs
+    simp only [pleq_raw, pad_cons_cons, List.mem_cons, forall_eq_or_imp, Prod.forall]
+    constructor
+    . exact hs.1
+    . simp only [pleq_raw, Prod.forall] at hs
+      exact hs.2
+
 
 lemma pleq_head_tail_imp_pleq_cons {x y : RawProd} {xs ys : List RawProd } (h_head : x ⊑ y) (h_tail: brak xs ⊑ brak ys ) : brak (x::xs) ⊑ brak (y::ys) := by
   simp_all only [pleq_raw, Prod.forall, pad_cons_cons, List.mem_cons, forall_eq_or_imp, Prod.mk.eta,
@@ -66,7 +74,7 @@ lemma replicate_zero_pleq_brak {n: ℕ } (xs : List RawProd): brak (List.replica
   intro x y ihxy
   apply pad_cases_strong at ihxy
 
-  suffices hx_zero : x = zero by rw [hx_zero]; exact zero_pleq y
+  suffices hx_zero : x = zero by rw [hx_zero]; exact zero_pleq
 
   cases ihxy
   case inl hl =>
@@ -81,6 +89,7 @@ lemma replicate_zero_pleq_brak {n: ℕ } (xs : List RawProd): brak (List.replica
       simp [List.mem_replicate] at hr
       exact hr.1.2
 
+
 lemma brak_pleq_replicate_zero_eq_replicate_zero {xs : List RawProd} (hpleq: ∃ n, brak xs ⊑ brak (List.replicate n zero)) : xs = List.replicate xs.length zero := by
   induction xs with
   | nil => simp only [List.length_nil, List.replicate_zero]
@@ -90,7 +99,7 @@ lemma brak_pleq_replicate_zero_eq_replicate_zero {xs : List RawProd} (hpleq: ∃
     | zero => simp only [List.replicate_zero] at hn; exact brak_pleq_nil_eq_replicate_zero hn;
     | succ n ihn =>
       simp only [List.replicate_succ] at hn
-      obtain ⟨hx,hxs⟩ := cons_pleq_cons hn
+      obtain ⟨hx,hxs⟩ := cons_pleq_cons_iff.mp hn
       simp only [List.length_cons, List.replicate_succ, List.cons.injEq]
       constructor
       . exact pleq_zero_eq_zero hx
@@ -132,8 +141,8 @@ theorem pleq_raw_antisymm : ∀ x y, x ⊑ y → y ⊑ x → x.equiv y := by
                 simp only [equiv, normalize, List.map_nil, trim_nil_eq_nil, List.map_replicate, normalize_zero_eq_zero, trim_replicate_zero_eq_nil]
       | cons y ys =>
 
-        obtain ⟨hxy,h_xs_ys⟩ := cons_pleq_cons hxs
-        obtain ⟨hyx,h_ys_xs⟩ := cons_pleq_cons hys
+        obtain ⟨hxy,h_xs_ys⟩ := cons_pleq_cons_iff.mp hxs
+        obtain ⟨hyx,h_ys_xs⟩ := cons_pleq_cons_iff.mp hys
         apply cons_equiv_cons
         . exact ih x (List.mem_cons_self) y (List.mem_cons_self) hxy hyx
         . apply ihxs
@@ -162,9 +171,9 @@ theorem pleq_raw_antisymm : ∀ x y, x ⊑ y → y ⊑ x → x.equiv y := by
 
 theorem pleq_transitivity : ∀ x y z, x ⊑ y → y ⊑ z → x ⊑ z := by
   apply RawProd.strong_induction₃
-  case h_zero_left => intro y z h1 h2; exact zero_pleq z
-  case h_zero_mid => intro x z h1 h2; rw [pleq_zero_eq_zero h1]; exact zero_pleq z
-  case h_zero_right => intro x y h1 h2; rw [pleq_zero_eq_zero h2] at h1; rw [pleq_zero_eq_zero h1]; exact zero_pleq zero
+  case h_zero_left => intro y z h1 h2; exact zero_pleq
+  case h_zero_mid => intro x z h1 h2; rw [pleq_zero_eq_zero h1]; exact zero_pleq
+  case h_zero_right => intro x y h1 h2; rw [pleq_zero_eq_zero h2] at h1; rw [pleq_zero_eq_zero h1]; exact zero_pleq
   case h_brak_brak_brak =>
       intro xs ys zs ih hl1 hl2
       induction xs generalizing ys zs
@@ -191,8 +200,8 @@ theorem pleq_transitivity : ∀ x y z, x ⊑ y → y ⊑ z → x ⊑ z := by
         . -- xs ys zs (the real deal)
           rename_i x xs ihx y ys z zs
 
-          obtain ⟨hxy, hxsys⟩ := cons_pleq_cons hl1
-          obtain ⟨hyz, hyszs⟩ := cons_pleq_cons hl2
+          obtain ⟨hxy, hxsys⟩ := cons_pleq_cons_iff.mp hl1
+          obtain ⟨hyz, hyszs⟩ := cons_pleq_cons_iff.mp hl2
 
           apply pleq_head_tail_imp_pleq_cons
           . exact ih x (List.mem_cons_self) y (List.mem_cons_self) z (List.mem_cons_self) hxy hyz
@@ -203,4 +212,40 @@ theorem pleq_transitivity : ∀ x y z, x ⊑ y → y ⊑ z → x ⊑ z := by
 
 
 
+lemma pleq_raw_respects_equiv {x₁ x₂ y₁ y₂ : RawProd} : x₁ ≈ x₂ → y₁ ≈ y₂ →  (x₁ ⊑ y₁) = (x₂ ⊑ y₂) := by
+  intro hx hy
+  --- should it really be equal not equiv???
+  sorry
+
+
+
 end RawProd
+
+namespace QProd
+
+/-- lift `pleq_raw` to `QProd`. -/
+def pleq (x y : QProd ) :  Prop :=
+  Quotient.liftOn₂ x y (RawProd.pleq_raw) fun _ _ _ _ hx hy => (RawProd.pleq_raw_respects_equiv hx hy)
+
+scoped infixl:50 " ⊑ " => pleq
+
+
+-- lemma pleq_refl (x : QProd) : x ⊑ x := by
+--   apply Quotient.ind
+--   intro xr
+--   --apply Quotient.sound (sorry)
+
+
+
+-- instance : PartialOrder QProd where
+--   le := pleq
+--   lt x y := x ⊑ y ∧ ¬ y ⊑ x
+--   le_refl _ _ _ := id
+--   le_trans _ _ _ hr hs _ _ h := hs <| hr h
+--   --lt_iff_le_not_ge _ _ := Iff.rfl
+--   le_antisymm _ _ h1 h2 := Setoid.ext fun _ _ => ⟨fun h => h1 h, fun h => h2 h⟩
+
+
+
+
+end QProd

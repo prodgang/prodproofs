@@ -27,7 +27,7 @@ lemma prune_zero_eq_zero (x : RawProd) : x ⊓ zero = zero := by
 
 
 @[simp]
-lemma brak_prune_nil_eq_nil (xs : List RawProd) : (brak xs) ⊓ (brak []) = brak [] := by
+lemma brak_prune_nil_eq_nil {xs : List RawProd} : (brak xs) ⊓ (brak []) = brak [] := by
   -- how does simp not work?
     simp only [prune_raw, List.zipWith_nil_right]
 
@@ -50,8 +50,17 @@ lemma brak_prune_brak_neq_zero (xs ys : List RawProd) : (brak xs) ⊓ (brak ys) 
   simp only [prune_raw, ne_eq, reduceCtorEq, not_false_eq_true]
 
 
+lemma cons_prune_cons {xs ys : List RawProd} {x y : RawProd} : (brak (x::xs)) ⊓ (brak (y::ys)) = brak ((x ⊓ y)::(List.zipWith prune_raw xs ys)) := by
+  simp only [prune_raw, List.zipWith_cons_cons]
 
 
+
+
+  -- helper: membership of trim implies membership of the original list
+-- lemma mem_trim_subset {l : List RawProd} {a : RawProd} (h : a ∈ trim l) : a ∈ l := by
+--   have hsub : trim l <+: l := by simp only [trim, List.rdropWhile_prefix]
+--   apply List.IsPrefix.subset hsub
+--   exact h
 
 
 /-- compatibility: if `x ≈ x'` and `y ≈ y'` then `prune_raw x y ≈ prune_raw x' y'`.
@@ -79,16 +88,6 @@ theorem prune_raw_respects_equiv_cases {x x' y y' : RawProd} (hx : x.equiv x') (
         case brak ys' =>
           simp_all [equiv, normalize]
           sorry -- induction on all lists?
-
-
-
-
-  -- helper: membership of trim implies membership of the original list
--- lemma mem_trim_subset {l : List RawProd} {a : RawProd} (h : a ∈ trim l) : a ∈ l := by
---   have hsub : trim l <+: l := by simp only [trim, List.rdropWhile_prefix]
---   apply List.IsPrefix.subset hsub
---   exact h
-
 
 
 
@@ -152,6 +151,8 @@ theorem prune_raw_assoc : ∀ x y z, x ⊓ (y ⊓ z) = (x ⊓ y) ⊓ z := by
 
 lemma prune_raw_idem_equiv (x : RawProd) : prune_raw x x ≈ x := by
   rw [prune_raw_idem]
+  rfl
+
 
 
 

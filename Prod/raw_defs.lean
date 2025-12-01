@@ -10,11 +10,11 @@ inductive RawProd where
 namespace RawProd
 
 -- the most basic lemmas
-@[aesop unsafe]
-lemma zero_neq_brak (xs : List RawProd) : zero ≠ brak xs := by simp only [ne_eq, reduceCtorEq, not_false_eq_true]
+@[simp]
+lemma zero_neq_brak {xs : List RawProd} : zero ≠ brak xs := by simp only [ne_eq, reduceCtorEq, not_false_eq_true]
 
-@[aesop unsafe]
-lemma brak_neq_zero (xs : List RawProd) : brak xs ≠ zero := by simp only [ne_eq, reduceCtorEq, not_false_eq_true]
+@[simp]
+lemma brak_neq_zero {xs : List RawProd} : brak xs ≠ zero := by simp only [ne_eq, reduceCtorEq, not_false_eq_true]
 
 
 variable {P : RawProd → Prop}
@@ -128,6 +128,37 @@ theorem strong_induction₂
       apply h_brak_brak xs ys
       intro x' hx y' hy
       exact ih_x x' hx y'
+
+
+-- basically same as above but saves me tyoing out the list inductions each time and remembering what to generalize
+theorem strong_list_induction₂
+ {P : RawProd → RawProd → Prop}
+  (h_zero_left  : ∀ y,                 P zero      y)
+  (h_zero_right : ∀ x,                 P x         zero)
+  (h_nil_left   : ∀ ys,                P (brak []) (brak ys))
+  (h_nil_right  : ∀ xs,                P (brak xs) (brak []))
+  (h_cons_cons  : ∀ x y xs ys,
+     (P x y) →
+     (P (brak xs) (brak ys)) →
+     P (brak (x::xs)) (brak (y::ys)))
+  : ∀ x y, P x y := by
+    apply RawProd.strong_induction₂
+    case h_zero_left => exact h_zero_left
+    case h_zero_right => exact h_zero_right
+    case h_brak_brak =>
+      intro xs ys ih
+      induction xs generalizing ys with
+      | nil => exact h_nil_left ys
+      | cons xh xts ihx =>
+        induction ys with
+        | nil => exact h_nil_right (xh::xts)
+        | cons yh yts ihy =>
+          apply h_cons_cons
+          . simp only [List.mem_cons, true_or, ih]
+          . simp only [List.mem_cons] at ih ihy
+            simp_all only [or_true, implies_true]
+
+
 
 
 
