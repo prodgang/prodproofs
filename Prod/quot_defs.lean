@@ -9,18 +9,6 @@ namespace RawProd
 def trim (xs : List RawProd) : List RawProd := xs.rdropWhile (. == zero)
 
 
-/-- Recursively normalize a RawProd by removing trailing zeros at all levels -/
-def normalize : RawProd → RawProd
-  | zero => zero
-  | brak xs => brak (trim (List.map normalize xs))
-
---@[simp]
-lemma normalize_zero_eq_zero : normalize zero = zero := by simp only [normalize]
-
---@[simp]
-lemma normalize_brak_neq_zero (xs : List RawProd) : normalize (brak xs) ≠ zero := by simp only [normalize, ne_eq, reduceCtorEq, not_false_eq_true]
-
-
 
 --@[simp]
 lemma trim_nil_eq_nil : trim [] = [] := by simp [trim]
@@ -31,6 +19,23 @@ lemma trim_nil_eq_nil : trim [] = [] := by simp [trim]
 --@[simp]
 lemma trim_append_brak_eq_self (xs ys: List RawProd): trim ( xs ++  [brak ys]) = xs ++ [brak ys] := by
   simp only [trim, beq_iff_eq, reduceCtorEq, not_false_eq_true, List.rdropWhile_concat_neg]
+
+
+
+/-- Recursively normalize a RawProd by removing trailing zeros at all levels -/
+def normalize : RawProd → RawProd
+  | zero => zero
+  | brak xs => brak (trim (List.map normalize xs))
+
+--@[simp]
+lemma normalize_zero_eq_zero : normalize zero = zero := by simp only [normalize]
+
+lemma normalize_nil_eq_nil : normalize (brak []) = (brak []) := by simp only [normalize, List.map_nil, trim_nil_eq_nil]
+
+--@[simp]
+lemma normalize_brak_neq_zero (xs : List RawProd) : normalize (brak xs) ≠ zero := by simp only [normalize, ne_eq, reduceCtorEq, not_false_eq_true]
+
+--lemma normalize_cons_cons {x : RawProd} {xs : List RawProd} : normalize (brak (x::xs)) =
 
 -- The equiv definition stays the same:
 -- def equiv_old (x y : RawProd) : Prop :=
@@ -65,12 +70,13 @@ instance : Setoid RawProd where
 
 -- Now normalize_eq_of_equiv becomes provable:
 lemma equiv_normalize_eq : ∀ x y, equiv x y → normalize x = normalize y := by
-  intro x y h
-  cases x <;> cases y <;> simp [equiv, normalize] at h
-  · rfl
-  · rename_i xs ys
-    simp only [normalize]
-    congr 1
+  simp only [equiv, imp_self, implies_true]
+  -- intro x y h
+  -- cases x <;> cases y <;> simp [equiv, normalize] at h
+  -- · rfl
+  -- · rename_i xs ys
+  --   simp only [normalize]
+  --   congr 1
 
 --@[simp]
 lemma trim_idem (xs : List RawProd) : trim (trim xs) = trim xs := by
@@ -78,53 +84,21 @@ lemma trim_idem (xs : List RawProd) : trim (trim xs) = trim xs := by
 
 
 -- auxiliary lemma: if f fixes every element of l, then map f l = l
-lemma map_eq_of_fixed_blah {α : Type _} (f : α → α) (l : List α)
-    (H : ∀ x ∈ l, f x = x) : (l.map f) = l := by
-  induction l with
-  | nil => simp
-  | cons hd tl ih =>
-    simp [List.map]
-    have hhd : f hd = hd := H hd (by simp)
-    have htl : ∀ x ∈ tl, f x = x := fun x hx => H x (by simp_all only [List.mem_cons, or_true, implies_true, forall_const, forall_eq_or_imp, true_and])
-    have : tl.map f = tl := ih htl
-    simp [hhd, this]
+-- lemma map_eq_of_fixed_blah {α : Type _} (f : α → α) (l : List α)
+--     (H : ∀ x ∈ l, f x = x) : (l.map f) = l := by
+--   induction l with
+--   | nil => simp
+--   | cons hd tl ih =>
+--     simp [List.map]
+--     have hhd : f hd = hd := H hd (by simp)
+--     have htl : ∀ x ∈ tl, f x = x := fun x hx => H x (by simp_all only [List.mem_cons, or_true, implies_true, forall_const, forall_eq_or_imp, true_and])
+--     have : tl.map f = tl := ih htl
+--     simp [hhd, this]
 
 
 lemma append_eq_imp_eq_eq (xs ys : List RawProd) (x y : RawProd) (h1 : xs = ys) (h2: x = y) : xs.append [x] = ys.append [y] := by
   subst h2 h1
   simp_all only [List.append_eq]
-
-lemma normalize_idem (x : RawProd) : normalize (normalize x) = normalize x := by
-  induction x using RawProd.induction with
-  | h_zero => simp only [normalize_zero_eq_zero]
-  | h_brak xs ih =>
-    induction xs using List.reverseRecOn with
-    | nil => simp only [normalize, List.map_nil, trim_nil_eq_nil]
-    | append_singleton xx x ihxx =>
-      simp_all [normalize]
-      cases x
-      case zero => simp_all only [trim, normalize_zero_eq_zero, BEq.rfl, List.rdropWhile_concat_pos];
-      case brak xx' =>
-        simp_all only [normalize, trim_append_brak_eq_self, List.map_append, List.map_map, List.map_cons, List.map_nil]
-        rw [← List.append_eq, ← List.append_eq]
-        apply append_eq_imp_eq_eq
-        . simp only [List.map_inj_left, Function.comp_apply]; intro a ha; apply ih; left; exact ha
-        . -- could be cleaner but does the job
-          have hxx : (brak xx').normalize.normalize = (brak xx').normalize := by apply ih; right; rfl
-          simp only [normalize] at hxx
-          exact hxx
-
---@[aesop safe]
-lemma equiv_of_normalize (x : RawProd) : (normalize x).equiv x := by
-  simp [equiv, normalize_idem]
-
---@[aesop unsafe 10%]
-lemma brak_map_normalize (xs : List RawProd) :
-     (brak (List.map normalize xs)).equiv (brak xs) := by
-  simp [equiv, normalize]
-  congr 1
-  simp only [List.map_inj_left, Function.comp_apply, normalize_idem, implies_true]
-
 
 
 --@[simp]
@@ -332,6 +306,40 @@ lemma cons_equiv_cons_backwards {x y : RawProd} {xs ys : List RawProd} :
 
 
 
+lemma normalize_idem (x : RawProd) : normalize (normalize x) = normalize x := by
+  induction x using RawProd.induction with
+  | h_zero => simp only [normalize_zero_eq_zero]
+  | h_brak xs ih =>
+    induction xs using List.reverseRecOn with
+    | nil => simp only [normalize, List.map_nil, trim_nil_eq_nil]
+    | append_singleton xx x ihxx =>
+      simp_all [normalize]
+      cases x
+      case zero => simp_all only [trim, normalize_zero_eq_zero, BEq.rfl, List.rdropWhile_concat_pos];
+      case brak xx' =>
+        simp_all only [normalize, trim_append_brak_eq_self, List.map_append, List.map_map, List.map_cons, List.map_nil]
+        rw [← List.append_eq, ← List.append_eq]
+        apply append_eq_imp_eq_eq
+        . simp only [List.map_inj_left, Function.comp_apply]; intro a ha; apply ih; left; exact ha
+        . -- could be cleaner but does the job
+          have hxx : (brak xx').normalize.normalize = (brak xx').normalize := by apply ih; right; rfl
+          simp only [normalize] at hxx
+          exact hxx
+
+
+--@[aesop safe]
+lemma equiv_of_normalize {x : RawProd} : (normalize x).equiv x := by
+  simp only [equiv, normalize_idem]
+
+--@[aesop unsafe 10%]
+lemma brak_map_normalize (xs : List RawProd) :
+     (brak (List.map normalize xs)).equiv (brak xs) := by
+  simp [equiv, normalize]
+  congr 1
+  simp only [List.map_inj_left, Function.comp_apply, normalize_idem, implies_true]
+
+
+
 
 end RawProd
 
@@ -349,11 +357,11 @@ def mk : RawProd → QProd := Quotient.mk RawProd.instSetoid
 def zero : QProd := mk RawProd.zero
 
 /-- Get the normalized representative -/
-def normalize : QProd → RawProd :=
+def rep : QProd → RawProd :=
   Quotient.lift RawProd.normalize RawProd.equiv_normalize_eq
 
 def ofList (xs : List QProd) : QProd :=
-  mk (RawProd.brak (xs.map normalize))
+  mk (RawProd.brak (xs.map rep))
 
 --@[simp]
 lemma brak_eq_mk (x : RawProd) : ⟦x⟧ = mk x := by rfl
@@ -363,7 +371,7 @@ lemma zero_eq_zero : mk RawProd.zero = QProd.zero := by rfl
 
 lemma ofList_map_mk_eq_mk_brak (xs : List RawProd) :
     ofList (List.map mk xs) = mk (RawProd.brak xs) := by
-  simp only [ofList, normalize, List.map_map]
+  simp only [ofList, rep, List.map_map]
   apply Quotient.sound
   have hl : Quotient.lift RawProd.normalize RawProd.equiv_normalize_eq ∘ mk = RawProd.normalize :=
     Quotient.lift_comp_mk _ _
@@ -388,5 +396,35 @@ theorem induction {P : QProd → Prop}
     specialize h_cons ih_raw
     rw [ofList_map_mk_eq_mk_brak] at h_cons
     exact h_cons
+
+
+-- lemma norm_rep_equiv_iff_eq {x y : QProd } : x.norm_rep.equiv y.norm_rep ↔ x = y := by
+--   constructor
+--   . --intro h
+--     revert x y
+--     apply Quotient.ind₂
+--     intro x y h
+--     simp [RawProd.equiv] at h
+--     sorry
+--   . sorry
+
+
+@[simp]
+lemma mk_rep_eq {q : QProd} : mk (rep q) = q := by
+  -- reduce to the mk-a case
+  revert q
+  apply Quotient.ind
+  intro a
+  show mk (RawProd.normalize a) = mk a
+  apply Quotient.sound
+  exact RawProd.equiv_of_normalize
+
+@[simp]
+lemma rep_equiv_eq {x y : QProd } :  x.rep.equiv y.rep → x = y := by
+  intro hequiv
+  calc
+    x = mk (rep x) := (mk_rep_eq).symm
+    _ = mk (rep y) := Quotient.sound hequiv
+    _ = y := mk_rep_eq
 
 end QProd

@@ -92,61 +92,40 @@ theorem prune_raw_respects_equiv_cases {x x' y y' : RawProd} (hx : x.equiv x') (
 
 
 theorem prune_raw_idem (x : RawProd) : x ⊓ x = x := by
-  induction x using RawProd.induction with
+  induction x using RawProd.induction_list with
   | h_zero => apply prune_zero_eq_zero
-  | h_brak xs ih =>
-    induction xs with
-    | nil => apply brak_prune_nil_eq_nil
-    | cons y ys ihy =>
-      simp_all only [List.mem_cons, or_true, implies_true, prune_raw, List.zipWith_self, brak.injEq,
-        forall_const, forall_eq_or_imp, List.map_cons]
+  | h_nil => apply brak_prune_nil_eq_nil
+  | h_cons xs ih =>
+    simp_all only [prune_raw, List.zipWith_self, brak.injEq, List.map_cons]
 
 
 theorem prune_raw_comm : ∀ x y, x ⊓ y = y ⊓ x := by
-  apply RawProd.strong_induction₂ --(prune_raw x y = prune_raw y x)
+  apply RawProd.induction_list₂
   case h_zero_left => simp only [zero_prune_eq_zero, prune_zero_eq_zero, implies_true]
   case h_zero_right => simp only [prune_zero_eq_zero, zero_prune_eq_zero, implies_true]
-  case h_brak_brak =>
-    intro xs ys ih
-    induction xs generalizing ys with
-    | nil => simp only [ne_eq, reduceCtorEq, not_false_eq_true, nil_prune_eq_nil, prune_nil_eq_nil]
-    | cons z zs ihz => -- want double induction instead actually or do I? double induction seems to be stronger than pairwise
-      cases ys with
-      | nil => simp only [ne_eq, reduceCtorEq, not_false_eq_true, prune_nil_eq_nil, nil_prune_eq_nil]
-      | cons y yy =>
-        simp only [prune_raw, List.zipWith_cons_cons, brak.injEq, List.cons.injEq]
-        constructor
-        . apply ih <;> simp only [List.mem_cons, true_or]
-        . simp only [prune_raw, brak.injEq] at ihz;
-          have ihzs : ∀ x ∈ zs, ∀ y ∈ yy, x.prune_raw y = y.prune_raw x := by intro x hx y hyy; apply ih <;> simp only [List.mem_cons]; right; exact hx; right; exact hyy
-          exact ihz yy ihzs
+  case h_nil_left => simp only [ne_eq, brak_neq_zero, not_false_eq_true, nil_prune_eq_nil, prune_nil_eq_nil, implies_true]
+  case h_nil_right => simp only [ne_eq, brak_neq_zero, not_false_eq_true, prune_nil_eq_nil, nil_prune_eq_nil, implies_true]
+  case h_cons_cons =>
+    intro x y xs ys hx hxs
+    simp only [prune_raw, List.zipWith_cons_cons, brak.injEq, List.cons.injEq] at hxs ⊢
+    exact ⟨hx, hxs⟩
+
 
 
 
 
 theorem prune_raw_assoc : ∀ x y z, x ⊓ (y ⊓ z) = (x ⊓ y) ⊓ z := by
-  apply RawProd.strong_induction₃
+  apply RawProd.induction_list₃
   case h_zero_left => simp only [zero_prune_eq_zero, implies_true];
   case h_zero_mid => simp only [zero_prune_eq_zero, prune_zero_eq_zero, implies_true]
   case h_zero_right => simp only [prune_zero_eq_zero, implies_true]
-  case h_brak_brak_brak =>
-    intros xs ys zs ih
-    induction xs generalizing ys zs with
-    | nil => --brak [] ⊓ (brak ys ⊓ brak zs) = brak [] ⊓ brak ys ⊓ brak zs
-      simp only [ne_eq, brak_prune_brak_neq_zero, not_false_eq_true, nil_prune_eq_nil, reduceCtorEq]
-    | cons x' xx ihxx =>
-      cases ys with
-      | nil => --brak (x' :: xx) ⊓ (brak [] ⊓ brak zs) = brak (x' :: xx) ⊓ brak [] ⊓ brak zs
-        simp only [ne_eq, reduceCtorEq, not_false_eq_true, nil_prune_eq_nil, prune_nil_eq_nil]
-      | cons y yy =>
-        simp only [prune_raw, List.zipWith_cons_cons, brak.injEq]
-        cases zs with
-        | nil => simp only [List.zipWith_nil_right]
-        | cons z zz =>
-          simp_all only [List.mem_cons, or_true, prune_raw, brak.injEq, forall_eq_or_imp, List.zipWith_cons_cons, implies_true]
-          -- wouldnt bother inspecting tbh
-
-
+  case h_nil_left => simp only [ne_eq, brak_prune_brak_neq_zero, not_false_eq_true, nil_prune_eq_nil, brak_neq_zero, implies_true]
+  case h_nil_mid => simp only [ne_eq, brak_neq_zero, not_false_eq_true, nil_prune_eq_nil, prune_nil_eq_nil, implies_true]
+  case h_nil_right => simp only [prune_raw, List.zipWith_nil_right, implies_true]
+  case h_cons_cons_cons =>
+    intros x y z xs ys zs hx hxs
+    simp only [prune_raw, brak.injEq, List.zipWith_cons_cons, List.cons.injEq] at ⊢ hxs
+    exact ⟨hx, hxs⟩
 
 
 lemma prune_raw_idem_equiv (x : RawProd) : prune_raw x x ≈ x := by
