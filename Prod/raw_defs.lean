@@ -141,26 +141,26 @@ theorem induction_reverse {P : RawProd → Prop}
         . apply ihxs; intro x hx; apply ih; exact List.mem_append_left [xt] hx
 
 
--- theorem strong_induction₂
---  {P : RawProd → RawProd → Prop}
---   (h_zero_left  : ∀ y,                 P zero      y)
---   (h_zero_right : ∀ x,                 P x         zero)
---   (h_brak_brak  : ∀ xs ys,
---      (∀ x ∈ xs, ∀ y ∈ ys, P x y) →
---      P (brak xs) (brak ys)) :
---   ∀ x y, P x y := by
---   intro x y
---   -- outer induction on x, generalizing y so ih_x : ∀ x'∈xs, ∀ y, P x' y
---   induction x using induction generalizing y with
---   | h_zero      => exact h_zero_left y
---   | h_brak xs ih_x =>
---     -- inner induction on y; ih_x already speaks for ALL y
---     induction y using induction with
---     | h_zero      => exact h_zero_right (brak xs)
---     | h_brak ys   =>
---       apply h_brak_brak xs ys
---       intro x' hx y' hy
---       exact ih_x x' hx y'
+theorem induction₂
+ {P : RawProd → RawProd → Prop}
+  (h_zero_left  : ∀ y,                 P zero      y)
+  (h_zero_right : ∀ x,                 P x         zero)
+  (h_brak_brak  : ∀ xs ys,
+     (∀ x ∈ xs, ∀ y ∈ ys, P x y) →
+     P (brak xs) (brak ys)) :
+  ∀ x y, P x y := by
+  intro x y
+  -- outer induction on x, generalizing y so ih_x : ∀ x'∈xs, ∀ y, P x' y
+  induction x using induction generalizing y with
+  | h_zero      => exact h_zero_left y
+  | h_brak xs ih_x =>
+    -- inner induction on y; ih_x already speaks for ALL y
+    induction y using induction with
+    | h_zero      => exact h_zero_right (brak xs)
+    | h_brak ys   =>
+      apply h_brak_brak xs ys
+      intro x' hx y' hy
+      exact ih_x x' hx y'
 
 
 -- basically same as above but saves me typing out the list inductions each time and remembering what to generalize

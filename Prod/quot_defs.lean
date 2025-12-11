@@ -53,13 +53,13 @@ theorem equiv_refl : ∀ x, equiv x x := by
   intro x
   cases x <;> simp [equiv]
 
-theorem equiv_symm : ∀ x y, equiv x y → equiv y x := by
-  intro x y h
+theorem equiv_symm {x y : RawProd }: equiv x y → equiv y x := by
+  intro h
   cases x <;> cases y <;> simp_all [equiv, normalize]
 
 
-theorem equiv_trans : ∀ x y z, equiv x y → equiv y z → equiv x z := by
-  intro x y z h1 h2
+theorem equiv_trans {x y z : RawProd }: equiv x y → equiv y z → equiv x z := by
+  intro h1 h2
   cases x <;> cases y <;> cases z <;> simp_all only [equiv]
 
   /-- Setoid instance for productive numbers -/
@@ -67,16 +67,6 @@ instance : Setoid RawProd where
   r := equiv
   iseqv := ⟨equiv_refl, @equiv_symm, @equiv_trans⟩
 
-
--- Now normalize_eq_of_equiv becomes provable:
-lemma equiv_normalize_eq : ∀ x y, equiv x y → normalize x = normalize y := by
-  simp only [equiv, imp_self, implies_true]
-  -- intro x y h
-  -- cases x <;> cases y <;> simp [equiv, normalize] at h
-  -- · rfl
-  -- · rename_i xs ys
-  --   simp only [normalize]
-  --   congr 1
 
 --@[simp]
 lemma trim_idem (xs : List RawProd) : trim (trim xs) = trim xs := by
@@ -140,6 +130,9 @@ instance decidable_allzero (xs : List RawProd) [DecidableEq RawProd] :
   Decidable (allzero xs) := by
   dsimp [allzero]
   infer_instance
+
+
+lemma allzero_nil : allzero [] := by simp only [allzero, List.length_nil, List.replicate_zero]
 
 /-another definition-/
 lemma allzero_iff {xs : List RawProd} : allzero xs ↔ ∀ x ∈ xs, x = zero := by
@@ -252,6 +245,46 @@ lemma trim_cons {x : RawProd} {xs : List RawProd} : trim (x::xs) = if (allzero (
         simp only [List.cons_append]
 
 
+-- equiv lemmas
+
+@[simp]
+lemma equiv_zero_eq_zero {x : RawProd} : equiv zero x →  x = zero := by
+  intro hequiv
+  simp only [equiv] at hequiv
+  cases x
+  case zero => rfl
+  case brak xs => simp_all only [normalize, reduceCtorEq]
+
+
+@[simp]
+lemma zero_equiv_eq_zero {x : RawProd} : equiv x zero →  x = zero := by
+  intro hequiv
+  simp only [equiv] at hequiv
+  cases x
+  case zero => rfl
+  case brak xs => simp_all only [normalize, reduceCtorEq]
+
+lemma brak_equiv_nil_imp_allzero {xs : List RawProd} : (brak xs).equiv (brak []) → allzero xs := by
+  intro h
+  induction xs with
+  | nil => simp only [allzero, List.length_nil, List.replicate_zero]
+  | cons x xs ih =>
+    simp [equiv, normalize, trim] at h
+    simp [allzero_iff]
+    constructor
+    . exact normalize_eq_zero_eq_zero h.1
+    . intro a ha
+      exact normalize_eq_zero_eq_zero (h.2 a ha)
+
+lemma nil_equiv_brak_imp_allzero {xs : List RawProd} : (brak []).equiv (brak xs) → allzero xs := by
+  intro h
+  apply brak_equiv_nil_imp_allzero
+  apply equiv_symm
+  exact h
+
+
+
+
 lemma cons_equiv_cons {x y : RawProd} {xs ys : List RawProd} :
     x.equiv y →  (brak xs).equiv (brak ys) →  (brak (x :: xs)).equiv (brak (y :: ys)) := by
     intro hxy hbb
@@ -277,13 +310,6 @@ lemma cons_equiv_cons {x y : RawProd} {xs ys : List RawProd} :
     . simp only [List.cons.injEq, true_and]
       exact hbb
 
-    -- . intro hequiv
-    --   simp_all [equiv, normalize, trim_cons]
-    --   split_ifs hequiv
-
-    --   sorry
-
-
 lemma cons_equiv_cons_backwards {x y : RawProd} {xs ys : List RawProd} :
     (brak (x :: xs)).equiv (brak (y :: ys)) → x.equiv y ∧ (brak xs).equiv (brak ys) := by
 
@@ -304,6 +330,8 @@ lemma cons_equiv_cons_backwards {x y : RawProd} {xs ys : List RawProd} :
     simp_all only [List.cons.injEq, and_self]
 
 
+lemma equiv_normalize_eq : ∀ x y, equiv x y → normalize x = normalize y := by
+  simp only [equiv, imp_self, implies_true]
 
 
 lemma normalize_idem (x : RawProd) : normalize (normalize x) = normalize x := by
