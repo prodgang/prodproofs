@@ -183,7 +183,7 @@ lemma interp_list_singleton (x : RawProd) (i : ℕ ) : 0 < interp_list [x] i := 
 -- @[aesop unsafe] lemma interp_brak_eq_interp_mult (x : RawProd) (xs : List RawProd) (i : ℕ ) : interp_list (x::xs) i = interp_list [x] i * interp_list xs i+1 := by
 --   sorry
 
-lemma interp_list_gt_zero (xs : List RawProd) (i : ℕ) : 0 < interp_list xs i := by
+lemma interp_list_gt_zero {xs : List RawProd} {i : ℕ} : 0 < interp_list xs i := by
   induction xs generalizing i with
   | nil => simp only [interp_list, zero_lt_one]
   | cons x xs ih =>
