@@ -9,14 +9,6 @@ import Mathlib.NumberTheory.PrimeCounting
 
 namespace RawProd
 
--- noncomputable def interp_raw : RawProd → ℕ
---   | zero => 0
---   | brak xs => interp_list xs 0
--- where
---   interp_list : List RawProd → ℕ → ℕ
---     | [], _ => 1
---     | x :: xs, i => (Nat.nth Nat.Prime i) ^ interp_raw x * interp_list xs (i + 1)
-
 /-! ## Basic lemmas about trailing zeros -/
 
 
@@ -34,8 +26,6 @@ end
 lemma interp_zero : interp_raw zero = 0 := by
   simp only [interp_raw]
 
--- lemma interp_nil : interp_raw (brak []) = 1 := by
---   simp only [interp_raw, interp_list]
 
 lemma interp_nil {i : ℕ } : interp_list [] i = 1 := by
   simp only [interp_list]
@@ -44,9 +34,34 @@ lemma interp_nil {i : ℕ } : interp_list [] i = 1 := by
 -- lemma interp_list_cons {x : RawProd} {xs : List RawProd} {i : ℕ } : interp_list (x::xs) i = Nat.nth  * interp_list xs (i+1) := by
 --   simp only [interp_list, mul_one]
 
-lemma interp_cons_coprime {xs : List RawProd } {i : ℕ }  : ¬  (Nat.nth Nat.Prime i) ∣ interp_list xs (i+1) := by
+-- lemma prime_gt_one {p : ℕ } (hp : Nat.Prime p) : 1 < p := by
+--   sorry
 
+lemma primes_distinct {n m : ℕ } (h : n ≠ m) : Nat.nth Nat.Prime n ≠ Nat.nth Nat.Prime m := by
   sorry
+
+lemma interp_cons_coprime {xs : List RawProd } {i : ℕ }  : ¬  (Nat.nth Nat.Prime i) ∣ interp_list xs (i+1) := by
+  induction xs generalizing i with
+  | nil =>
+    simp only [interp_nil]
+    apply Nat.Prime.not_dvd_one
+    exact (Nat.prime_nth_prime i)
+  | cons x xs ih =>
+    simp only [interp_list]
+    intro h
+    apply Nat.Prime.dvd_or_dvd at h
+    . cases h
+      . rename_i hpow
+        apply (Nat.Prime.dvd_of_dvd_pow (Nat.prime_nth_prime i)) at hpow
+        rw [Nat.prime_dvd_prime_iff_eq] at hpow
+        . simp_all only [ne_eq, Nat.left_eq_add, one_ne_zero, not_false_eq_true, primes_distinct]
+        . exact (Nat.prime_nth_prime i)
+        . exact (Nat.prime_nth_prime (i+1))
+      . --apply (ih i) i mismatch...
+        sorry
+    . exact Nat.prime_nth_prime i
+
+
 
 
 /-- Adding a single zero to the end doesn't change interpretation -/
@@ -143,45 +158,12 @@ theorem equiv_interp_eq {x y : RawProd }: equiv x y → interp_raw x = interp_ra
     exact h1
 
 
--- theorem equiv_interp_eq_induction {x y : RawProd }: equiv x y → interp_raw x = interp_raw y := by
---   revert x y
---   apply RawProd.induction_list₂
---   case h_zero_left => intro y h; apply equiv_zero_eq_zero at h; subst h; rfl
---   case h_zero_right => intro x h; apply zero_equiv_eq_zero at h; subst h; rfl
---   case h_nil_left =>
---     intro ys he
---     have hz := nil_equiv_brak_imp_allzero he
---     simp only [interp_raw, interp_allzero_eq_one allzero_nil, interp_allzero_eq_one hz]
---   -- exact same
---   case h_nil_right => intro ys he; have hz := brak_equiv_nil_imp_allzero he; simp only [interp_raw, interp_allzero_eq_one allzero_nil, interp_allzero_eq_one hz]
 
---   case h_cons_cons =>
---     intro x y xs ys hx hxs hequiv
---     simp only [interp_raw, interp_list] at hxs ⊢
---     have ⟨he1,he2⟩ := cons_equiv_cons_backwards hequiv
---     rw [hx he1]
---     --simp only [zero_add, mul_eq_mul_left_iff, Nat.pow_eq_zero, ne_eq]
---     simp only [mul_eq_mul_left_iff, zero_add]
---     left
---     apply hxs
---     -- aaah index shifts by 1
-
---     sorry
-
-
-    --calc
-    --  interp_list (trim (List.map normalize xs)) 0 = interp_list (List.map normalize xs) 0 := by sorry
-    --  _                                                       =
-
-
--- @[simp]
 lemma interp_list_singleton (x : RawProd) (i : ℕ ) : 0 < interp_list [x] i := by
   simp [interp_list]
   have hnope : 0 < Nat.nth Nat.Prime i := by simp [Nat.prime_nth_prime, Nat.Prime.pos]
   simp_all only [pow_pos]
 
--- @[aesop unsafe] lemma interp_brak_eq_interp_mult (x : RawProd) (xs : List RawProd) (i : ℕ ) : interp_list (x::xs) i = interp_list [x] i * interp_list xs i+1 := by
---   sorry
 
 lemma interp_list_gt_zero {xs : List RawProd} {i : ℕ} : 0 < interp_list xs i := by
   induction xs generalizing i with
@@ -197,31 +179,37 @@ lemma interp_list_gt_zero {xs : List RawProd} {i : ℕ} : 0 < interp_list xs i :
 
 
 
-lemma raw_interp_eq_zero_eq_zero (x : RawProd) (hz : RawProd.interp_raw x = 0) : x = RawProd.zero := by
+lemma interpraw_eq_zero_eq_zero (x : RawProd) (hz : RawProd.interp_raw x = 0) : x = RawProd.zero := by
   match x with
-  | zero => simp
+  | zero => simp only
   | brak xs =>
-    simp only [brak_neq_zero]
-    induction xs <;> simp only [interp_raw] at hz
-    . simp only [interp_nil, one_ne_zero] at hz
-    . simp only [interp_list] at hz
-      simp_all only [zero_add, mul_eq_zero, Nat.pow_eq_zero, ne_eq]
-      cases hz
-      . simp_all only [Nat.nth_prime_zero_eq_two, OfNat.ofNat_ne_zero]
-      . simp_all [interp_raw]
-        -- aaah index has shifted
-        sorry
+    simp [interp_raw] at hz
+    absurd hz
+    have hgtz : 0 < interp_list xs 0 := interp_list_gt_zero
+    simp_all only [lt_self_iff_false]
 
 
-  --| brak (x::xs) => simp only [brak_neq_zero]
-  --rename_i y
 
-                    -- rw [interp_raw, interp_list] at hz
+noncomputable def fromNat : Nat → RawProd
+  | 0 => zero
+  | 1 => brak []
+  | n@(Nat.succ _) =>
+      -- Get the list of prime factors and determine the maximum prime factor
+      -- let factor_map := Nat.primeFactorsList n
+      -- let max_prime := factor_map.foldl (fun acc p => max acc p) 2
+      -- let max_index := (factor_map.idxOf max_prime) + 1
+      let max_index := n -- crazy crude bound
 
-                    -- --simp [Nat.add_eq_zero, mul_eq_zero, one_ne_zero, and_false] at hz
-                    -- sorry
+      have n_neq_0: n ≠ 0 := by grind only
 
-
+      brak (List.map (λi => fromNat (n.factorization (Nat.nth Nat.Prime i))) (List.range max_index))
+termination_by n => n
+decreasing_by
+  rename_i n2 h
+  simp only [namedPattern, Nat.succ_eq_add_one]
+  have h2 : n = n2 + 1 := by simp only [h, Nat.succ_eq_add_one]
+  rw [← h2]
+  exact Nat.factorization_lt (Nat.nth Nat.Prime i) n_neq_0
 
 end RawProd
 
@@ -242,30 +230,28 @@ theorem interp_mk (x : RawProd) : interp (mk x) = RawProd.interp_raw x := by
 
 -- FROMNAT
 
-/-- Extract the exponent of the i-th prime in n's factorization -/
+-- noncomputable def fromNat : Nat → QProd
+--   | 0 => zero
+--   | 1 => ofList []
+--   | n@(Nat.succ _) =>
+--       -- Get the list of prime factors and determine the maximum prime factor
+--       let factor_map := Nat.primeFactorsList n
+--       let max_prime := factor_map.foldl (fun acc p => max acc p) 2
+--       let max_index := (factor_map.idxOf max_prime) + 1
 
-noncomputable def fromNat : Nat → QProd
-  | 0 => zero
-  | 1 => ofList []
-  | n@(Nat.succ _) =>
-      -- Get the list of prime factors and determine the maximum prime factor
-      let factor_map := Nat.primeFactorsList n
-      let max_prime := factor_map.foldl (fun acc p => max acc p) 2
-      let max_index := (factor_map.idxOf max_prime) + 1
+--       have n_neq_0: n ≠ 0 := by simp?; sorry
 
-      have n_neq_0: n ≠ 0 := by simp?; sorry
+--       ofList (List.map (λi => fromNat (n.factorization (Nat.nth Nat.Prime i))) (List.range max_index))
 
-      ofList (List.map (λi => fromNat (n.factorization (Nat.nth Nat.Prime i))) (List.range max_index))
+-- termination_by n => n
+-- decreasing_by
+--   rename_i n2 h
+--   simp only [namedPattern, Nat.succ_eq_add_one, gt_iff_lt]
+--   have h2 : n = n2 + 1 := by sorry
+--   rw [← h2]
+--   exact Nat.factorization_lt (Nat.nth Nat.Prime i) n_neq_0
 
-termination_by n => n
-decreasing_by
-  rename_i n2 h
-  simp only [namedPattern, Nat.succ_eq_add_one, gt_iff_lt]
-  have h2 : n = n2 + 1 := by sorry
-  rw [← h2]
-  exact Nat.factorization_lt (Nat.nth Nat.Prime i) n_neq_0
-
-
+noncomputable def fromNat (n : ℕ ) := mk (RawProd.fromNat n)
 
 -- silly little lemmas
 
@@ -277,35 +263,30 @@ decreasing_by
 
 
 
-@[simp]
-lemma interp_eq_zero_eq_zero (x : QProd) (hz : interp x = 0) : x = zero := by
-  -- apply Quotient.in
-  -- intro r
-  -- have : RawProd.interp_raw r = 0 := by
-  --   simp [interp, Quotient.liftOn] at hz
-  --   exact hz
-  -- rw [RawProd.raw_interp_eq_zero_eq_zero r this]
-  -- --apply Quotient.sound
-  -- --apply RawProd.equiv.refl
-  -- simp only [RawProd.interp_zero, brak_eq_mk]
-  apply Quot.recOn
-  . sorry
-  . sorry
+-- @[simp]
+-- lemma interp_eq_zero_eq_zero (x : QProd) (hz : interp x = 0) : x = zero := by
+--   -- apply Quotient.in
+--   -- intro r
+--   -- have : RawProd.interp_raw r = 0 := by
+--   --   simp [interp, Quotient.liftOn] at hz
+--   --   exact hz
+--   -- rw [RawProd.raw_interp_eq_zero_eq_zero r this]
+--   -- --apply Quotient.sound
+--   -- --apply RawProd.equiv.refl
+--   -- simp only [RawProd.interp_zero, brak_eq_mk]
+--   apply Quot.recOn
+--   . sorry
+--   . sorry
 
   -- shouldnt be so hard!!
   -- probably need better mechanics for lifting to quotient
 
 
-
-
-
-@[simp]
 lemma fromNat_zero : fromNat 0 = zero := by
-  simp [fromNat]
+  simp only [fromNat, RawProd.fromNat, mk_zero_eq_zero]
 
 
-@[simp]
 lemma fromNat_one : fromNat 1 = ofList []  := by
-  simp [fromNat]
+  simp only [fromNat, RawProd.fromNat, mk_nil_eq_nil]
 
 end QProd

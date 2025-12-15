@@ -124,21 +124,21 @@ theorem induction_list {P : RawProd → Prop}
         . apply ih; exact List.mem_cons_self
         . apply ihxs; intro x hx; apply ih; exact (List.mem_cons_of_mem xh hx)
 
-theorem induction_reverse {P : RawProd → Prop}
-    (h_zero : P zero)
-    (h_nil : P (brak []))
-    (h_append : ∀ xs x, P x → P (brak xs) → P (brak (xs ++ [x])))
-    : ∀ x, P x := by
-    intro x
-    induction x using induction with
-    | h_zero => exact h_zero
-    | h_brak xs ih =>
-      induction xs using List.reverseRecOn with
-      | nil => exact h_nil
-      | append_singleton xs xt ihxs =>
-        apply h_append
-        . apply ih; simp only [List.mem_append, List.mem_cons, List.not_mem_nil, or_false, or_true]
-        . apply ihxs; intro x hx; apply ih; exact List.mem_append_left [xt] hx
+-- theorem induction_reverse {P : RawProd → Prop}
+--     (h_zero : P zero)
+--     (h_nil : P (brak []))
+--     (h_append : ∀ xs x, P x → P (brak xs) → P (brak (xs ++ [x])))
+--     : ∀ x, P x := by
+--     intro x
+--     induction x using induction with
+--     | h_zero => exact h_zero
+--     | h_brak xs ih =>
+--       induction xs using List.reverseRecOn with
+--       | nil => exact h_nil
+--       | append_singleton xs xt ihxs =>
+--         apply h_append
+--         . apply ih; simp only [List.mem_append, List.mem_cons, List.not_mem_nil, or_false, or_true]
+--         . apply ihxs; intro x hx; apply ih; exact List.mem_append_left [xt] hx
 
 
 theorem induction₂
@@ -164,34 +164,6 @@ theorem induction₂
 
 
 -- basically same as above but saves me typing out the list inductions each time and remembering what to generalize
--- theorem strong_list_induction₂
---  {P : RawProd → RawProd → Prop}
---   (h_zero_left  : ∀ y,                 P zero      y)
---   (h_zero_right : ∀ x,                 P x         zero)
---   (h_nil_left   : ∀ ys,                P (brak []) (brak ys))
---   (h_nil_right  : ∀ xs,                P (brak xs) (brak []))
---   (h_cons_cons  : ∀ x y xs ys,
---      (P x y) →
---      (P (brak xs) (brak ys)) →
---      P (brak (x::xs)) (brak (y::ys)))
---   : ∀ x y, P x y := by
---     apply RawProd.strong_induction₂
---     case h_zero_left => exact h_zero_left
---     case h_zero_right => exact h_zero_right
---     case h_brak_brak =>
---       intro xs ys ih
---       induction xs generalizing ys with
---       | nil => exact h_nil_left ys
---       | cons xh xts ihx =>
---         cases ys with
---         | nil => exact h_nil_right (xh::xts)
---         | cons yh yts =>
---           apply h_cons_cons
---           . simp only [List.mem_cons, true_or, ih]
---           . simp only [List.mem_cons] at ih --ihy
---             simp_all only [or_true, implies_true]
-
-
 theorem induction_list₂
  {P : RawProd → RawProd → Prop}
   (h_zero_left  : ∀ y,                 P zero      y)
@@ -220,32 +192,6 @@ theorem induction_list₂
           apply h_cons_cons
           . exact (hx _)
           . exact (hxs _)
-
-
--- theorem strong_induction₃
---  {P : RawProd → RawProd → RawProd → Prop}
---   (h_zero_left  : ∀ y z, P zero y z)
---   (h_zero_mid : ∀ x z, P x zero z)
---   (h_zero_right : ∀ x y, P x y zero)
---   (h_brak_brak_brak  : ∀ xs ys zs ,
---      (∀ x ∈ xs, ∀ y ∈ ys, ∀ z ∈ zs, P x y z) →
---      P (brak xs) (brak ys) (brak zs)) :
---   ∀ x y z, P x y z := by
---   intro x y z
---   -- outer induction on x, generalizing y so ih_x : ∀ x'∈xs, ∀ y, P x' y
---   induction x using induction generalizing y z with
---   | h_zero      => exact h_zero_left y z
---   | h_brak xs ih_x =>
---     -- inner induction on y; ih_x already speaks for ALL y
---     induction y using induction generalizing z with
---     | h_zero      => exact h_zero_mid (brak xs) z
---     | h_brak ys ih_y  =>
---       induction z using induction with
---       | h_zero => exact h_zero_right (brak xs) (brak ys)
---       | h_brak zs ih_z =>
---         apply h_brak_brak_brak xs ys zs
---         intro x' hx y' hy z' hz
---         exact ih_x x' hx y' z'
 
 -- tedious but easy
 theorem induction_list₃
@@ -286,7 +232,7 @@ theorem induction_list₃
               . exact hx _ _
               . exact hxs _ _
 
--- useful for lifting binary ops
+-- useful for lifting binary ops (or is it?)
 theorem induction_list₄
  {P : RawProd → RawProd → RawProd → RawProd → Prop}
   (h_zero1  : ∀ x y z, P zero x y z)
@@ -336,7 +282,6 @@ theorem induction_list₄
                   . exact hxs _ _ _
 
 
---@[simp]
 def padWith {α : Type _} (f : RawProd → RawProd → α) : List RawProd → List RawProd → List α
   | xs, ys => xs.zipWithAll (fun oa ob => (f (oa.getD zero) (ob.getD zero))) ys
 
@@ -367,7 +312,7 @@ lemma nil_pad (xs : List RawProd) : pad [] xs = List.zip (List.replicate xs.leng
     exact ih
 
 
-lemma pad_cases_strong {p : RawProd × RawProd} {xs ys : List RawProd} (hxy : p ∈ pad xs ys ) :  p ∈ List.zip xs ys ∨ (p.1 = zero ∧ p.2 ∈ ys) ∨ (p.1 ∈ xs ∧ p.2 = zero) := by
+lemma pad_cases {p : RawProd × RawProd} {xs ys : List RawProd} (hxy : p ∈ pad xs ys ) :  p ∈ List.zip xs ys ∨ (p.1 = zero ∧ p.2 ∈ ys) ∨ (p.1 ∈ xs ∧ p.2 = zero) := by
 induction xs generalizing ys with
   | nil =>
     simp only [nil_pad] at hxy
@@ -386,10 +331,8 @@ induction xs generalizing ys with
         exact hxy.left
 
       | cons y' yy =>
-          --apply ihxx yy hxy
           simp only [pad, padWith, List.zipWithAll_cons_cons, Option.getD_some, List.mem_cons] at hxy ihxx
           simp_all only [List.zip_cons_cons, List.mem_cons]
-          --left
           cases hxy with
           | inl h => simp_all only [true_or]
           | inr h_1 =>
@@ -403,77 +346,16 @@ induction xs generalizing ys with
                     | inl h => simp_all only [true_and, or_true, and_self, true_or]
                     | inr h_2 => simp_all only [and_self, or_true, implies_true]
 
--- lemma pad_cases {p : RawProd × RawProd} {xs ys : List RawProd} (hxy : p ∈ pad xs ys ) :  p ∈ List.zip xs ys ∨ p.1 = zero ∨ p.2 = zero := by
---   --intro hxy
---   --simp_all [zipPairs]
---   induction xs generalizing ys with
---   | nil =>
---     simp only [nil_pad] at hxy
---     apply List.of_mem_zip at hxy
---     simp only [List.mem_replicate, ne_eq, List.length_eq_zero_iff] at hxy
---     simp_all only [List.zip_nil_left, List.not_mem_nil, true_or, or_true]
---   | cons x' xx ihxx =>
---       cases ys with
---       | nil =>
---         rw [pad_nil] at hxy
---         apply List.of_mem_zip at hxy
---         simp only [List.mem_replicate, ne_eq, List.length_eq_zero_iff] at hxy
---         simp only [List.zip_nil_right, hxy.right.right, List.not_mem_nil, or_true]
---       | cons y' yy =>
---           --apply ihxx yy hxy
---           simp only [pad, padWith, List.zipWithAll_cons_cons, Option.getD_some, List.mem_cons] at hxy ihxx
---           simp_all only [List.zip_cons_cons, List.mem_cons]
---           --left
---           cases hxy with
---           | inl h => simp_all only [true_or]
---           | inr h_1 =>
---             cases (ihxx h_1) with
---             | inl l => left; right; exact l
---             | inr r => right; exact r
 
-
---@[simp]
  lemma pad_nil_cons (x : RawProd) (xs : List RawProd) : pad [] (x::xs) = (zero, x) :: pad [] xs := by
   simp only [nil_pad, List.length_cons, List.replicate_succ, List.zip_cons_cons]
 
---@[simp]
 lemma pad_cons_nil (x : RawProd) (xs : List RawProd) : pad (x::xs) [] = (x, zero) :: pad xs [] := by
   simp only [pad_nil, List.length_cons, List.replicate_succ, List.zip_cons_cons]
 
 
---@[simp]
  lemma pad_cons_cons (x y : RawProd) (xs ys : List RawProd) : pad (x::xs) (y::ys) = (x,y) :: (pad xs ys) := by
   simp only [pad, padWith, List.zipWithAll_cons_cons, Option.getD_some]
-
-
-
-
-
--- theorem induction₂ -- pairwise not strong, do i even need this??
---  {P : RawProd → RawProd → Prop}
---   (h_zero_left  : ∀ y, P zero y)
---   (h_zero_right : ∀ x, P x zero)
---   (h_brak_brak  : ∀ xs ys, (∀ p ∈ padPair xs ys, P p.1 p.2) → P (brak xs) (brak ys)) :
---   ∀ x y, P x y := by
---   intro x y
---   induction x using RawProd.induction with
---   | h_zero => exact h_zero_left y
---   | h_brak xs ihx =>
---     induction y using RawProd.induction with
---     | h_zero => exact h_zero_right (brak xs)
---     | h_brak ys ihy =>
---         sorry
-        -- P : RawProd → RawProd → Prop
-        -- h_zero_left : ∀ (y : RawProd), P zero y
-        -- h_zero_right : ∀ (x : RawProd), P x zero
-        -- h_brak_brak : ∀ (xs ys : List RawProd), (∀ p ∈ zipPairs xs ys, P p.1 p.2) → P (brak xs) (brak ys)
-        -- xs ys : List RawProd
-        -- ihy : ∀ x ∈ ys, (∀ x_1 ∈ xs, P x_1 x) → P (brak xs) x
-        -- ihx : ∀ x ∈ xs, P x (brak ys)
-        -- ⊢ P (brak xs) (brak ys)
-        -- this is bad because I want a pairwise ih....
-
-
 
 
 end RawProd

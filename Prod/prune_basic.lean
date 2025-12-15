@@ -153,7 +153,7 @@ lemma prune_mk_mk (x y : RawProd) : prune (mk x) (mk y) = mk (RawProd.prune_raw 
 lemma zero_prune_zero_eq_zero : prune zero zero = zero := by
   change prune (mk RawProd.zero) (mk RawProd.zero) = mk RawProd.zero
   rw [prune_mk_mk]
-  simp only [prune_zero_eq_zero, zero_eq_zero]
+  simp only [prune_zero_eq_zero, mk_zero_eq_zero]
 
 
 

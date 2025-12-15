@@ -73,7 +73,7 @@ lemma brak_pleq_nil_eq_replicate_zero {xs : List RawProd} (hleq: brak xs ⊑ bra
 lemma replicate_zero_pleq_brak {n: ℕ } (xs : List RawProd): brak (List.replicate n zero) ⊑ brak xs := by
   simp only [pleq_raw, Prod.forall]
   intro x y ihxy
-  apply pad_cases_strong at ihxy
+  apply pad_cases at ihxy
 
   suffices hx_zero : x = zero by rw [hx_zero]; exact zero_pleq
 
@@ -141,7 +141,8 @@ theorem pleq_raw_antisymm {x y : RawProd} (h1 : x ⊑ y) (h2 : y ⊑ x) : x.equi
     intro x y xs ys hx hxs hleq hleq2
     obtain ⟨hxy,h_xs_ys⟩ := cons_pleq_cons_iff.mp hleq
     obtain ⟨hyx,h_ys_xs⟩ := cons_pleq_cons_iff.mp hleq2
-    apply cons_equiv_cons
+    apply cons_equiv_cons_iff.mp
+    constructor
     . exact hx hxy hyx
     . exact hxs h_xs_ys h_ys_xs
 
@@ -192,7 +193,7 @@ theorem pleq_prune_iff { x y : RawProd } : x ⊑ y ↔ (x ⊓ y).equiv x := by
     case h_cons_cons =>
       intro xh yh xt yt h ht hcons
       simp only [cons_prune_cons]
-      apply cons_equiv_cons
+      apply cons_equiv_cons_iff.mp; constructor
       . apply h
         exact (cons_pleq_cons_iff.mp hcons).1
       . simp only [prune_raw] at ht
@@ -220,7 +221,7 @@ theorem pleq_prune_iff { x y : RawProd } : x ⊑ y ↔ (x ⊓ y).equiv x := by
     case h_cons_cons =>
       intro xh yh xt yt hh ht hcons
       simp only [cons_prune_cons] at hcons
-      obtain ⟨hl, hr⟩ := cons_equiv_cons_backwards hcons
+      obtain ⟨hl, hr⟩ := cons_equiv_cons_iff.mpr hcons
       apply cons_pleq_cons_iff.mpr
       simp only [prune_raw] at ht
       exact ⟨hh hl, ht hr⟩
