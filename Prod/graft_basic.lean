@@ -62,6 +62,9 @@ lemma brak_graft_brak_neq_zero (xs ys : List RawProd) : (brak xs) ⊔ (brak ys) 
   simp only [graft_raw, ne_eq, reduceCtorEq, not_false_eq_true]
 
 
+lemma cons_graft_cons {xs ys : List RawProd} {x y : RawProd} : (brak (x::xs)) ⊔ (brak (y::ys)) = brak ((x ⊔ y)::(padWith graft_raw xs ys)) := by
+  simp only [graft_raw, brak.injEq]
+  sorry
 
 
 theorem graft_raw_idem (x : RawProd) : x ⊔ x = x := by
@@ -100,41 +103,79 @@ theorem graft_raw_assoc : ∀ x y z, x ⊔ (y ⊔ z) = (x ⊔ y) ⊔ z := by
     exact ⟨hx, hxs⟩
 
 
+theorem graft_raw_respects_equiv {x x' y y' : RawProd} (hx : x.equiv x') (hy : y.equiv y') : (x ⊔ y).equiv (x' ⊔ y') := by
+  revert x x' y y'
+  apply induction_list₄
+  case h_zero1 => intro x y z h1 h2; rw [equiv_zero_eq_zero h1]; simp only [zero_graft_eq_self]; exact h2
+  case h_zero2 => intro x y z h1 h2; rw [zero_equiv_eq_zero h1]; simp only [zero_graft_eq_self]; exact h2
+  case h_zero3 => intro x y z h1 h2; rw [equiv_zero_eq_zero h2]; simp only [graft_zero_eq_self]; exact h1
+  case h_zero4 => intro x y z h1 h2; rw [zero_equiv_eq_zero h2]; simp only [graft_zero_eq_self]; exact h1
+  case h_nil1 => sorry -- intros; simp [ne_eq, brak_neq_zero, not_false_eq_true]; apply prune_raw_trim_equiv; assumption;
+  case h_nil2 => sorry
+  case h_nil3 => sorry
+  case h_nil4 => sorry
+  case h_cons_cons_cons_cons =>
+    intro w x y z ws xs ys zs h hs h1 h2
+    simp only [cons_graft_cons]
+    obtain ⟨h1h, h1t⟩ := cons_equiv_cons_iff.mpr h1
+    obtain ⟨h2h, h2t⟩ := cons_equiv_cons_iff.mpr h2
+    apply cons_equiv_cons_iff.mp; constructor
+    . apply h; exact h1h; exact h2h
+    . simp [graft_raw] at hs
+      apply hs; exact h1t; exact h2t
+
 
 end RawProd
 
 
 namespace QProd
 
+open RawProd
+
+-- def graft (x y : QProd ): QProd := Quotient.liftOn₂ x y (fun x y => mk (RawProd.graft_raw x y)) (by
+--   intro x₁ x₂ y₁ y₂ h₁ h₂
+--   simp only
+--   revert h₁ h₂
+--   apply Quotient.indu;
+--   sorry
+-- )
 
 def graft (x y : QProd) : QProd :=
-  mk (RawProd.graft_raw (rep x) (rep y))
-  --mk (RawProd.normalize (RawProd.graft_raw (rep x) (rep y)))
+  Quotient.liftOn₂ x y (fun a b => mk (RawProd.graft_raw a b)) fun _ _ _ _ hx hy =>
+    Quotient.sound (RawProd.graft_raw_respects_equiv hx hy)
+
+
+-- def graft (x y : QProd) : QProd :=
+--   mk (RawProd.graft_raw (rep x) (rep y))
+--   --mk (RawProd.normalize (RawProd.graft_raw (rep x) (rep y)))
+
 
 
 infixl:70 " ⊔ " => graft
 
 theorem graft_idem {x : QProd} : x ⊔ x = x := by
-  dsimp [graft]
-  rw [RawProd.graft_raw_idem]
-  simp only [mk_rep_eq]
+
+  revert x
+  apply Quotient.ind
+  intro x
+  apply Quotient.sound
+  rw [graft_raw_idem]
+  rfl
 
 theorem graft_comm {x y : QProd } : x ⊔ y = y ⊔ x := by
-  dsimp [graft]
-  rw [RawProd.graft_raw_comm]
+  revert x y
+  apply Quotient.ind₂
+  intro x y
+  apply Quotient.sound
+  rw [graft_raw_comm]
+  rfl
 
-lemma graft_rep_rep (x y : QProd ) : x.rep ⊔ y.rep = (x ⊔ y).rep := by -- not gonna be true for prune?
-  dsimp [rep]
--- ⊢ Quotient.lift RawProd.normalize RawProd.equiv_normalize_eq x ⊔
---     Quotient.lift RawProd.normalize RawProd.equiv_normalize_eq y =
---   Quotient.lift RawProd.normalize RawProd.equiv_normalize_eq (x ⊔ y)
-  sorry
 
 theorem graft_assoc {x y z : QProd } : x ⊔ (y ⊔ z) = (x ⊔ y) ⊔ z := by
-  dsimp [graft]
-  rw [(graft_rep_rep x y), (graft_rep_rep y z)]
-  simp only [mk_rep_eq]
-  rw [← (graft_rep_rep x y), ← (graft_rep_rep y z)]
-  simp [RawProd.graft_raw_assoc]
+  refine Quotient.inductionOn₃ x y z ?_
+  intro a b c
+  apply Quotient.sound
+  rw [graft_raw_assoc]
+  rfl
 
 end QProd

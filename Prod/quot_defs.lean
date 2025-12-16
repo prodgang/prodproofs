@@ -251,25 +251,7 @@ lemma trim_eq_nil_iff {xs : List RawProd} : trim xs = [] ↔ RawProd.allzero xs 
       rw [heqz.1] at h
       exact h
 
-
-lemma brak_equiv_nil_imp_allzero {xs : List RawProd} : (brak xs).equiv (brak []) → allzero xs := by
-  intro h
-  induction xs with
-  | nil => simp only [allzero, List.length_nil, List.replicate_zero]
-  | cons x xs ih =>
-    simp [equiv, normalize, trim] at h
-    simp [allzero_iff]
-    constructor
-    . exact normalize_eq_zero_eq_zero h.1
-    . intro a ha
-      exact normalize_eq_zero_eq_zero (h.2 a ha)
-
-lemma nil_equiv_brak_imp_allzero {xs : List RawProd} : (brak []).equiv (brak xs) → allzero xs := by
-  intro h
-  apply brak_equiv_nil_imp_allzero
-  apply equiv_symm
-  exact h
-
+@[simp]
 lemma trim_allzero_eq_nil {xs : List RawProd } (hz : allzero xs) : trim xs = [] := by
   simp [allzero] at hz
   rw [hz]
@@ -343,52 +325,49 @@ constructor
     rename_i hxs_naz hys_naz
     simp_all only [List.cons.injEq, and_self]
 
--- lemma cons_equiv_cons {x y : RawProd} {xs ys : List RawProd} :
---     x.equiv y →  (brak xs).equiv (brak ys) →  (brak (x :: xs)).equiv (brak (y :: ys)) := by
---     intro hxy hbb
---     simp_all only [equiv, normalize, brak.injEq, List.map_cons]
---     simp only [trim_cons]
---     split_ifs
---     . -- [] = []
---       rfl
---     . --xs [] ??
---       rename_i hxs hys
---       have hy_z : y.normalize = zero := by rw [allzero_iff] at hxs; exact hxs y.normalize (List.mem_cons_self)
---       have hxs_az : allzero (List.map normalize xs) := by rw [allzero_iff] at hxs ⊢; intro x' hx'; apply hxs; apply List.mem_cons_of_mem; exact hx'   -- use hxs and some mem_cons situation
---       have hys_az : allzero (List.map normalize ys) := by have hxs_nil := trim_eq_nil_iff.mpr hxs_az; rw [hxs_nil] at hbb; apply trim_eq_nil_iff.mp; exact hbb.symm -- use hx_az and hbb
---       have h_fin : allzero (y.normalize :: List.map normalize ys) := by simp [allzero, List.length_cons, List.length_map] at ⊢ hys_az; rw [hy_z, hys_az]; simp only [List.replicate_succ]
---       exact hys h_fin
---     . -- [] ys (symm of above)
---       rename_i hxs hys
---       have hy_z : y.normalize = zero := by rw [allzero_iff] at hys; exact hys y.normalize (List.mem_cons_self)
---       have hys_az : allzero (List.map normalize ys) := by rw [allzero_iff] at hys ⊢; intro x' hx'; apply hys; apply List.mem_cons_of_mem; exact hx'   -- use hxs and some mem_cons situation
---       have hxs_az : allzero (List.map normalize xs) := by have hxs_nil := trim_eq_nil_iff.mpr hys_az; rw [hxs_nil] at hbb; apply trim_eq_nil_iff.mp; exact hbb -- use hx_az and hbb
---       have h_fin : allzero (y.normalize :: List.map normalize xs) := by simp [allzero, List.length_cons, List.length_map] at ⊢ hys_az; rw [hy_z, hxs_az]; simp only [List.length_map, List.replicate_succ]
---       exact hxs h_fin
---     . simp only [List.cons.injEq, true_and]
---       exact hbb
-
--- lemma cons_equiv_cons_backwards {x y : RawProd} {xs ys : List RawProd} :
---     (brak (x :: xs)).equiv (brak (y :: ys)) → x.equiv y ∧ (brak xs).equiv (brak ys) := by
-
---   intro h
---   simp_all [equiv, normalize, trim_cons]
---   split at h <;> split at h
---   . -- [] []
---     rename_i hxxs_az hyys_az
---     obtain ⟨hxz, hxs_az⟩ := allzero_cons hxxs_az
---     obtain ⟨hyz, hys_az⟩ := allzero_cons hyys_az
---     constructor
---     . rw [hxz, hyz]
---     . rw [trim_allzero_eq_nil hxs_az, trim_allzero_eq_nil hys_az]
---   . simp_all only [List.nil_eq, reduceCtorEq]
---   . simp_all only [reduceCtorEq]
---   . -- xs ys
---     rename_i hxs_naz hys_naz
---     simp_all only [List.cons.injEq, and_self]
+lemma brak_equiv_nil_iff_allzero {xs : List RawProd} : (brak xs).equiv (brak []) ↔ allzero xs := by
+  constructor
+  . intro h
+    induction xs with
+    | nil => simp only [allzero, List.length_nil, List.replicate_zero]
+    | cons x xs ih =>
+      simp [equiv, normalize, trim] at h
+      simp [allzero_iff]
+      constructor
+      . exact normalize_eq_zero_eq_zero h.1
+      . intro a ha
+        exact normalize_eq_zero_eq_zero (h.2 a ha)
+  . intro h
+    simp [equiv, normalize_nil_eq_nil]
+    rw [allzero_iff] at h
+    simp [normalize]
+    induction xs with
+    | nil => simp only [List.map_nil, trim_nil_eq_nil]
+    | cons x xs ih =>
+      simp [trim_cons]
+      apply allzero_iff.mpr
+      intro x1 hx1
+      sorry
+      --apply h
+      -- apply List.mem_cons.mpr
+      -- rw [List.mem_cons] at hx1
+      -- cases hx1
+      -- . left
+      --   sorry
+      -- . sorry
 
 
-
+lemma nil_equiv_brak_iff_allzero {xs : List RawProd} : (brak []).equiv (brak xs) ↔ allzero xs := by
+  sorry --apply brak_equiv_nil_iff_allzero
+  --rw [equiv_symm]
+  -- constructor
+  -- . intro h
+  --   apply brak_equiv_nil_iff_allzero.mp
+  --   apply equiv_symm
+  --   exact h
+  -- . intro h
+  --   apply brak_equiv_nil_iff_allzero.mpr
+  --   sorry
 
 end RawProd
 

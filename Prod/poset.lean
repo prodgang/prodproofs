@@ -181,7 +181,7 @@ theorem pleq_prune_iff { x y : RawProd } : x ⊑ y ↔ (x ⊓ y).equiv x := by
     apply RawProd.induction_list₂
     case h_zero_left => intro _ _ ; rw [zero_prune_eq_zero]; rfl
     case h_zero_right => intro x hx; simp only [prune_zero_eq_zero]; simp only [(pleq_zero_eq_zero hx)]; rfl
-    case h_nil_left => intro _ _; rw [nil_prune_eq_nil]; rfl; exact brak_neq_zero
+    case h_nil_left => intro _ _; rw [nil_prune_nz_eq_nil]; rfl; exact brak_neq_zero
     case h_nil_right =>
       -- use brak xs ⊑ [] to get allzero xs and then...
       intro xs hleq
@@ -214,10 +214,10 @@ theorem pleq_prune_iff { x y : RawProd } : x ⊑ y ↔ (x ⊓ y).equiv x := by
         intro x hin
         have hn := hprune x hin
         exact (zero_eq_normalize_eq_zero hn.symm)
-      simp [allzero] at hxs_az
+      simp only [allzero] at hxs_az
       rw [hxs_az]
       simp only [replicate_zero_pleq_brak]
-      simp only [ne_eq, brak_neq_zero, not_false_eq_true]
+
     case h_cons_cons =>
       intro xh yh xt yt hh ht hcons
       simp only [cons_prune_cons] at hcons

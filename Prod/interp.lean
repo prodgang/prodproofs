@@ -40,8 +40,8 @@ lemma interp_nil {i : ℕ } : interp_list [] i = 1 := by
 lemma primes_distinct {n m : ℕ } (h : n ≠ m) : Nat.nth Nat.Prime n ≠ Nat.nth Nat.Prime m := by
   sorry
 
-lemma interp_cons_coprime {xs : List RawProd } {i : ℕ }  : ¬  (Nat.nth Nat.Prime i) ∣ interp_list xs (i+1) := by
-  induction xs generalizing i with
+lemma interp_cons_coprime {xs : List RawProd } {i j: ℕ } (hlt : i < j) : ¬  (Nat.nth Nat.Prime i) ∣ interp_list xs j := by
+  induction xs generalizing i j with
   | nil =>
     simp only [interp_nil]
     apply Nat.Prime.not_dvd_one
@@ -54,11 +54,15 @@ lemma interp_cons_coprime {xs : List RawProd } {i : ℕ }  : ¬  (Nat.nth Nat.Pr
       . rename_i hpow
         apply (Nat.Prime.dvd_of_dvd_pow (Nat.prime_nth_prime i)) at hpow
         rw [Nat.prime_dvd_prime_iff_eq] at hpow
-        . simp_all only [ne_eq, Nat.left_eq_add, one_ne_zero, not_false_eq_true, primes_distinct]
+        . apply primes_distinct at hpow
+          . exact hpow
+          . linarith
         . exact (Nat.prime_nth_prime i)
-        . exact (Nat.prime_nth_prime (i+1))
+        . exact (Nat.prime_nth_prime j)
       . --apply (ih i) i mismatch...
-        sorry
+        have hlt2 : i < (j+1) := by linarith
+        apply (ih hlt2)
+        assumption
     . exact Nat.prime_nth_prime i
 
 
@@ -222,7 +226,7 @@ noncomputable def interp : QProd → ℕ :=
 
 /-! ## Additional useful properties for later proofs -/
 
-theorem interp_mk (x : RawProd) : interp (mk x) = RawProd.interp_raw x := by
+lemma interp_mk (x : RawProd) : interp (mk x) = RawProd.interp_raw x := by
   simp only [interp, mk, Quotient.lift_mk]
 
 

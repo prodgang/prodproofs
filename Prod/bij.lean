@@ -66,6 +66,7 @@ lemma factorization_interp_list {xs : List RawProd} (k i : ℕ) :
       simp only [Nat.prime_nth_prime, Nat.Prime.factorization, Finsupp.smul_single, smul_eq_mul, mul_one, Finsupp.coe_add, Pi.add_apply, Finsupp.single_eq_same, Nat.add_eq_left]
       · rw [Nat.factorization_eq_zero_of_not_dvd]
         apply interp_cons_coprime
+        exact Nat.lt_succ_self k
 
       · apply pow_ne_zero; apply Nat.Prime.ne_zero; apply Nat.prime_nth_prime
       · apply ne_of_gt; apply interp_list_gt_zero
