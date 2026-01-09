@@ -20,7 +20,7 @@ Definition of a productive number. This is written up in `raw_defs.lean`.
   | cons : List RawProd → RawProd
   deriving Repr``
 
-By definition, padding zeros does not change a prod, so $[x, y] = [x, y, zero]$ and so on. This is enforced by defining a quotient type in `quot_defs3.lean`
+By definition, padding zeros does not change a prod, so $[x, y] = [x, y, zero]$ and so on. This is enforced by defining a quotient type in `quot_defs.lean`
 
 Interpretation:
 * $eval(zero) = 0$
@@ -43,7 +43,7 @@ Graft:
 
 ### Isomorphism
 
-Every natural number has a unique productive representation (up to padding). Various parts of this proof have all failed miserably in nat_iso.lean
+Every natural number has a unique productive representation (up to padding). Proof in `bij.lean`
 
 (existence is clear)
 
@@ -57,7 +57,7 @@ Uniqueness (strong induction):
 
 ### Poset
 
-$\leq$ is a partial order. Proofs are straightforward, but lean translations tricky (see poset.lean)
+$\leq$ is a partial order. Proofs in `poset.lean`
 
 Reflexivity:
 * $0 \leq 0$ by (1)
@@ -84,7 +84,7 @@ Transitivity ($x \leq y \leq z \implies x \leq z$):
 
 ### Lattice
 
-graft ($\lor$) and prune ($\land$) induce a distributive lattice. Restricting to sublattices (i.e. $\{x : 0 \leq x \leq n\}$), gives a Heyting algebra. If $n$ is square-free (and $\bot = []$), its a Boolean algebra. Lean proofs not even attempted yet.
+graft ($\lor$) and prune ($\land$) induce a distributive lattice. Restricting to sublattices (i.e. $\{x : 0 \leq x \leq n\}$), gives a Heyting algebra. If $n$ is square-free (and $\bot = []$), its a Boolean algebra. Distributive lattice proof basically finished in `absorb.lean`, Heying algebra part not yet started. 
 
 The partial order of a lattice is usually defined as $a \leq b \iff a \land b = a$. This coincides with the definition of inequality above since:
 * $0 \land b = 0$. Thus $0 \leq x, \forall x$.
