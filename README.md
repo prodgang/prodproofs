@@ -2,6 +2,14 @@
 
 This repo contains the proofs of the major results of productive numbers. The proofs are mostly straightforward, but translating them into lean has been a massive headache - in particular nested induction over lists of lists. 
 
+Main results formalized so far:
+
+1. Bijection - there's a bijection between Nat and QProd
+2. Distributive Lattice - (QProd, prune, graft) forms a distributive lattice. All the major pieces are there, just need to show general equivalence of lattice definitions from [here](https://en.wikipedia.org/wiki/Lattice_(order)#Connection_between_the_two_definitions). 
+
+
+Here's the definitions/proofs in english which is hopefully a bit more readable.
+
 
 ## Definitions
 
