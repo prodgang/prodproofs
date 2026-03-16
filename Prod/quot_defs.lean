@@ -15,7 +15,6 @@ lemma append_eq_imp_eq_eq {xs ys : List RawProd} {x y : RawProd} (h1 : xs = ys) 
 
 
 /- trim -/
---def trim (xs : List RawProd) : List RawProd := (xs.reverse.dropWhile (· == zero)).reverse
 def trim (xs : List RawProd) : List RawProd := xs.rdropWhile (. == zero)
 
 
@@ -226,7 +225,7 @@ lemma not_allzero_append_zero {xs : List RawProd} (hnaz: ¬ RawProd.allzero (xs 
 
 
 lemma allzero_cons {x : RawProd} {xs : List RawProd} (haz : allzero (x::xs)) : x = zero ∧ allzero xs := by
-  simp_all [allzero]
+  simp_all only [allzero, List.length_cons]
   rw [List.replicate_succ, List.cons.injEq] at haz
   exact haz
 
@@ -326,48 +325,21 @@ constructor
     simp_all only [List.cons.injEq, and_self]
 
 lemma brak_equiv_nil_iff_allzero {xs : List RawProd} : (brak xs).equiv (brak []) ↔ allzero xs := by
+  simp only [equiv, normalize, List.map_nil, trim_nil_eq_nil, brak.injEq]
+  rw [trim_eq_nil_iff]
+  simp only [allzero_iff, List.mem_map, forall_exists_index, and_imp]
   constructor
-  . intro h
-    induction xs with
-    | nil => simp only [allzero, List.length_nil, List.replicate_zero]
-    | cons x xs ih =>
-      simp [equiv, normalize, trim] at h
-      simp [allzero_iff]
-      constructor
-      . exact normalize_eq_zero_eq_zero h.1
-      . intro a ha
-        exact normalize_eq_zero_eq_zero (h.2 a ha)
-  . intro h
-    simp [equiv, normalize_nil_eq_nil]
-    rw [allzero_iff] at h
-    simp [normalize]
-    induction xs with
-    | nil => simp only [List.map_nil, trim_nil_eq_nil]
-    | cons x xs ih =>
-      simp [trim_cons]
-      apply allzero_iff.mpr
-      intro x1 hx1
-      sorry
-      --apply h
-      -- apply List.mem_cons.mpr
-      -- rw [List.mem_cons] at hx1
-      -- cases hx1
-      -- . left
-      --   sorry
-      -- . sorry
+  · intro h x hx
+    exact normalize_eq_zero_eq_zero (h (normalize x) x hx rfl)
+  · intro h x y hy hyx
+    subst hyx
+    rw [h y hy, normalize_zero_eq_zero]
 
 
 lemma nil_equiv_brak_iff_allzero {xs : List RawProd} : (brak []).equiv (brak xs) ↔ allzero xs := by
-  sorry --apply brak_equiv_nil_iff_allzero
-  --rw [equiv_symm]
-  -- constructor
-  -- . intro h
-  --   apply brak_equiv_nil_iff_allzero.mp
-  --   apply equiv_symm
-  --   exact h
-  -- . intro h
-  --   apply brak_equiv_nil_iff_allzero.mpr
-  --   sorry
+  constructor
+  · intro h; exact brak_equiv_nil_iff_allzero.mp (equiv_symm h)
+  · intro h; exact equiv_symm (brak_equiv_nil_iff_allzero.mpr h)
 
 end RawProd
 
@@ -401,9 +373,6 @@ lemma ofList_map_mk_eq_mk_brak (xs : List RawProd) :
     ofList (List.map mk xs) = mk (RawProd.brak xs) := by
   simp only [ofList, rep, List.map_map]
   apply Quotient.sound
-  have hl : Quotient.lift RawProd.normalize @RawProd.equiv_normalize_eq ∘ mk = RawProd.normalize :=
-    Quotient.lift_comp_mk _ _
-  rw [hl]
   exact RawProd.brak_map_normalize xs
 
 /-- Induction principle for QProd -/

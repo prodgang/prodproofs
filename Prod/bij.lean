@@ -1,5 +1,6 @@
 import Prod.interp
 import Prod.quot_defs
+import Prod.misc
 import Mathlib.Data.Nat.Factorization.Basic
 import Mathlib.Data.Nat.Prime.Nth
 import Mathlib.Tactic.Linarith.Frontend
@@ -29,15 +30,6 @@ lemma get_cons_succ {x : RawProd} {xs : List RawProd} {i : ℕ} : get (x :: xs) 
 
 lemma factorization_add {p n m : ℕ }: (n.factorization + m.factorization) p  = n.factorization p + m.factorization p := by
   simp only [Nat.factorization, Finsupp.coe_add, Finsupp.coe_mk, Pi.add_apply]
-
-
--- couple of lemmas that really shouldnt be my responsibility
-
-lemma prime_index {p : ℕ } (hp : Nat.Prime p) : ∃ i, p = Nat.nth Nat.Prime i := by
-  sorry
-
-lemma prime_index_lt {i : ℕ } : i < Nat.nth Nat.Prime i := by
-  sorry
 
 
 /--

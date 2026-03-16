@@ -15,7 +15,7 @@ theorem distrib {x y z : RawProd }: x ⊓ (y ⊔ z) = (x ⊓ y) ⊔ (x ⊓ z) :=
   case h_nil_right => simp only [ne_eq, brak_neq_zero, not_false_eq_true, graft_nil_eq_self, prune_nil_eq_nil, brak_prune_brak_neq_zero, implies_true]
   case h_cons_cons_cons =>
     intros _ _ _ _ _ _ hx hxs
-    simp only [graft_raw, padWith, List.zipWithAll_cons_cons, Option.getD_some, prune_raw, List.zipWith_cons_cons, brak.injEq, List.cons.injEq] at hxs ⊢
+    simp only [prune_raw, graft_raw, brak.injEq, graft_list, prune_list, List.cons.injEq] at hxs ⊢
     exact ⟨hx, hxs⟩
 
 
@@ -29,7 +29,7 @@ theorem absorption1 {x y : RawProd } : x ⊔ (x ⊓ y) = x := by
   case h_nil_right => simp only [ne_eq, brak_neq_zero, not_false_eq_true, prune_nil_eq_nil, graft_nil_eq_self, implies_true]
   case h_cons_cons =>
     intro x y xs ys hx hxs
-    simp only [prune_raw, graft_raw, padWith, brak.injEq, List.zipWith_cons_cons, List.zipWithAll_cons_cons, Option.getD_some, List.cons.injEq] at hxs ⊢
+    simp only [graft_raw, prune_raw, brak.injEq, prune_list, graft_list, List.cons.injEq] at hxs ⊢
     exact ⟨hx, hxs⟩
 
 --even easier
@@ -42,7 +42,7 @@ theorem absorption2 {x y : RawProd } : x ⊓ (x ⊔ y) = x := by
   case h_nil_right =>  simp only [ne_eq, brak_neq_zero, not_false_eq_true, graft_nil_eq_self, prune_raw_idem, implies_true]
   case h_cons_cons =>
     intro x y xs ys hx hxs
-    simp only [prune_raw, graft_raw, padWith, brak.injEq, List.zipWith_cons_cons, List.zipWithAll_cons_cons, Option.getD_some, List.cons.injEq] at hxs ⊢
+    simp only [prune_raw, graft_raw, brak.injEq, graft_list, prune_list, List.cons.injEq] at hxs ⊢
     exact ⟨hx, hxs⟩
 
 -- this should be enough to prove distrib lattice but lean doesnt have the equivalence :////

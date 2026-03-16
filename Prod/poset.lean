@@ -9,13 +9,27 @@ namespace RawProd
 
 
 -- make literally ∀ rather than .Forall
-def pleq_raw : (RawProd ) → (RawProd) →  Prop
-  | zero, _        => True
-  | brak _, zero        => False
-  | brak xs, brak ys => ∀ xy ∈ (pad xs ys), (pleq_raw xy.1 xy.2)
-termination_by x y => x.size + y.size
-decreasing_by
-  sorry
+-- def pleq_raw : (RawProd ) → (RawProd) →  Prop
+--   | zero, _        => True
+--   | brak _, zero        => False
+--   | brak xs, brak ys => ∀ xy ∈ (pad xs ys), (pleq_raw xy.1 xy.2)
+-- termination_by x y => x.size + y.size
+-- decreasing_by
+--   sorry
+
+
+
+mutual
+  def pleq_raw : RawProd → RawProd → Prop
+    | brak xs, brak ys => pleq_list xs ys
+    | zero, _ => True
+    | _, zero => False
+
+  def pleq_list : List RawProd → List RawProd → Prop
+    | [], _ => True
+    | x :: xs, [] => allzero (x :: xs)
+    | x :: xs, y :: ys => (pleq_raw x y) ∧ pleq_list xs ys
+end
 
 
 scoped infixl:50 " ⊑ " => pleq_raw
@@ -29,66 +43,51 @@ lemma pleq_zero_eq_zero {x : RawProd} (hleq : x ⊑ zero) : x = zero := by
   | zero => rfl
   | brak xs  => simp_all only [pleq_raw]
 
+@[simp]
+lemma nil_pleq_list_brak {xs : List RawProd} : pleq_list [] xs := by
+  simp only [pleq_list]
+
 lemma nil_pleq_brak {xs : List RawProd} : brak [] ⊑ brak xs := by
   induction xs with
-  | nil => simp only [pleq_raw, pad_nil, List.length_nil, List.replicate_zero, List.zip_nil_right, List.not_mem_nil, IsEmpty.forall_iff, implies_true]
+  | nil => simp only [pleq_raw, nil_pleq_list_brak]
   | cons x xx ih =>
-    --simp_all only [pleq_raw, nil_pad, List.length_cons]
-    simp_all only [pleq_raw, Prod.forall, pad_nil_cons, List.mem_cons, forall_eq_or_imp, Prod.mk.eta, implies_true, and_self]
-
-lemma brak_pleq_brak (xs ys : List RawProd) (hl: brak xs ⊑ brak ys) : (∀ p ∈ pad xs ys, p.1 ⊑ p.2) := by simp only [pleq_raw, Prod.forall] at hl; intro p hp; exact hl p.1 p.2 hp
+    simp_all only [pleq_raw, nil_pleq_list_brak]
 
 lemma cons_pleq_cons_iff {x y : RawProd} {xs ys : List RawProd} : brak (x::xs) ⊑ brak (y::ys) ↔  x ⊑ y ∧ brak xs ⊑ brak ys := by
   constructor
-  . simp_all only [pleq_raw, pad_cons_cons, List.mem_cons, forall_eq_or_imp, Prod.forall, Prod.mk.eta, implies_true, and_self]
+  . simp_all only [pleq_raw, pleq_list, and_self, implies_true]
   . intro hs
-    simp only [pleq_raw, pad_cons_cons, List.mem_cons, forall_eq_or_imp, Prod.forall]
+    simp only [pleq_raw, pleq_list]
     constructor
     . exact hs.1
-    . simp only [pleq_raw, Prod.forall] at hs
+    . simp only [pleq_raw] at hs
       exact hs.2
 
 
 lemma pleq_head_tail_imp_pleq_cons {x y : RawProd} {xs ys : List RawProd } (h_head : x ⊑ y) (h_tail: brak xs ⊑ brak ys ) : brak (x::xs) ⊑ brak (y::ys) := by
-  simp_all only [pleq_raw, Prod.forall, pad_cons_cons, List.mem_cons, forall_eq_or_imp, Prod.mk.eta,
-    implies_true, and_self]
+  simp_all only [pleq_raw, pleq_list, and_self]
 
 
 lemma brak_pleq_nil_eq_replicate_zero {xs : List RawProd} (hleq: brak xs ⊑ brak []) : xs = List.replicate (xs.length) zero := by
-  induction xs with
-  | nil => simp only [List.length_nil, List.replicate_zero]
-  | cons x xs ih =>
-    simp only [pleq_raw, pad_cons_nil, List.mem_cons, forall_eq_or_imp, Prod.forall] at hleq
-    simp only [List.length_cons, List.replicate_succ, List.cons.injEq]
-    obtain ⟨hx, hxs⟩ := hleq
-    apply pleq_zero_eq_zero at hx
-    simp_all only [pad_nil, true_and]
-    simp only [pleq_raw, pad_nil] at ih
-    --exact ih hxs
-    apply ih
-    intro xy
-    exact hxs xy.1 xy.2
+  cases xs with
+  | nil => rfl
+  | cons x xs =>
+    simp only [pleq_raw, pleq_list] at hleq
+    exact hleq
 
 
 lemma replicate_zero_pleq_brak {n: ℕ } (xs : List RawProd): brak (List.replicate n zero) ⊑ brak xs := by
-  simp only [pleq_raw, Prod.forall]
-  intro x y ihxy
-  apply pad_cases at ihxy
+  simp only [pleq_raw]
+  induction n generalizing xs with
+  | zero => simp only [List.replicate_zero, pleq_list]
+  | succ n ih =>
+    cases xs with
+    | nil =>
+      simp only [List.replicate_succ, pleq_list, allzero, List.length_cons, List.length_replicate]
+    | cons y ys =>
+      simp only [List.replicate_succ, pleq_list, zero_pleq, true_and]
+      exact ih ys
 
-  suffices hx_zero : x = zero by rw [hx_zero]; exact zero_pleq
-
-  cases ihxy
-  case inl hl =>
-    apply List.of_mem_zip at hl
-    simp [List.mem_replicate] at hl
-    exact hl.1.2
-  case inr hmid =>
-    cases hmid
-    case inl hm =>
-      simp_all only
-    case inr hr =>
-      simp [List.mem_replicate] at hr
-      exact hr.1.2
 
 
 lemma brak_pleq_replicate_zero_eq_replicate_zero {xs : List RawProd} (hpleq: ∃ n, brak xs ⊑ brak (List.replicate n zero)) : xs = List.replicate xs.length zero := by
@@ -119,8 +118,8 @@ theorem pleq_raw_refl {x : RawProd }: x ⊑ x := by
     induction xs with
     | nil => apply nil_pleq_brak
     | cons x xs ihxs =>
-        simp_all only [List.mem_cons, or_true, implies_true, pleq_raw, Prod.forall, forall_const,
-          forall_eq_or_imp, pad_cons_cons, Prod.mk.eta, and_self]
+        simp_all only [List.mem_cons, or_true, implies_true, pleq_raw, forall_const,
+          forall_eq_or_imp, pleq_list, and_self]
 
 
 -- have to make answers equiv not equal because of [0,0] ⊑ [] but they arent literally equal

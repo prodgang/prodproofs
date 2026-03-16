@@ -1,5 +1,6 @@
 import Prod.raw_defs
 import Prod.quot_defs
+import Prod.misc
 import Mathlib.Data.Nat.Prime.Basic
 import Mathlib.Data.Nat.Nth
 import Mathlib.Algebra.GroupWithZero.Basic
@@ -37,8 +38,6 @@ lemma interp_nil {i : ℕ } : interp_list [] i = 1 := by
 -- lemma prime_gt_one {p : ℕ } (hp : Nat.Prime p) : 1 < p := by
 --   sorry
 
-lemma primes_distinct {n m : ℕ } (h : n ≠ m) : Nat.nth Nat.Prime n ≠ Nat.nth Nat.Prime m := by
-  sorry
 
 lemma interp_cons_coprime {xs : List RawProd } {i j: ℕ } (hlt : i < j) : ¬  (Nat.nth Nat.Prime i) ∣ interp_list xs j := by
   induction xs generalizing i j with
@@ -229,31 +228,6 @@ noncomputable def interp : QProd → ℕ :=
 lemma interp_mk (x : RawProd) : interp (mk x) = RawProd.interp_raw x := by
   simp only [interp, mk, Quotient.lift_mk]
 
-
-
-
--- FROMNAT
-
--- noncomputable def fromNat : Nat → QProd
---   | 0 => zero
---   | 1 => ofList []
---   | n@(Nat.succ _) =>
---       -- Get the list of prime factors and determine the maximum prime factor
---       let factor_map := Nat.primeFactorsList n
---       let max_prime := factor_map.foldl (fun acc p => max acc p) 2
---       let max_index := (factor_map.idxOf max_prime) + 1
-
---       have n_neq_0: n ≠ 0 := by simp?; sorry
-
---       ofList (List.map (λi => fromNat (n.factorization (Nat.nth Nat.Prime i))) (List.range max_index))
-
--- termination_by n => n
--- decreasing_by
---   rename_i n2 h
---   simp only [namedPattern, Nat.succ_eq_add_one, gt_iff_lt]
---   have h2 : n = n2 + 1 := by sorry
---   rw [← h2]
---   exact Nat.factorization_lt (Nat.nth Nat.Prime i) n_neq_0
 
 noncomputable def fromNat (n : ℕ ) := mk (RawProd.fromNat n)
 
