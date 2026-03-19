@@ -181,29 +181,16 @@ def graft (x y : QProd) : QProd :=
 
 infixl:70 " ⊔ " => graft
 
-theorem graft_idem {x : QProd} : x ⊔ x = x := by
+/-- Core computation rule: graft reduces to mk on representatives. -/
+lemma graft_mk_mk (x y : RawProd) : (mk x) ⊔ (mk y) = mk (x ⊔ y) := rfl
 
-  revert x
-  apply Quotient.ind
-  intro x
-  apply Quotient.sound
-  rw [graft_raw_idem]
-  rfl
+theorem graft_idem {x : QProd} : x ⊔ x = x :=
+  by apply (lift_eq₁ graft_raw_idem) x
 
-theorem graft_comm {x y : QProd } : x ⊔ y = y ⊔ x := by
-  revert x y
-  apply Quotient.ind₂
-  intro x y
-  apply Quotient.sound
-  rw [graft_raw_comm]
-  rfl
+theorem graft_comm {x y : QProd} : x ⊔ y = y ⊔ x :=
+  by apply (lift_eq₂ graft_raw_comm) x y
 
-
-theorem graft_assoc {x y z : QProd } : x ⊔ (y ⊔ z) = (x ⊔ y) ⊔ z := by
-  refine Quotient.inductionOn₃ x y z ?_
-  intro a b c
-  apply Quotient.sound
-  rw [graft_raw_assoc]
-  rfl
+theorem graft_assoc {x y z : QProd} : x ⊔ (y ⊔ z) = (x ⊔ y) ⊔ z :=
+  by apply (lift_eq₃ graft_raw_assoc) x y z
 
 end QProd

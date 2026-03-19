@@ -235,19 +235,15 @@ namespace QProd
 
 theorem interp_bijective : Function.Bijective interp := by
   constructor
-  . unfold Function.Injective
+  · unfold Function.Injective
     apply Quotient.ind₂
     intro x y h
     simp only [interp, Quotient.lift_mk] at h
-    apply Quotient.sound
-    apply RawProd.interp_inj
-    exact h
-  . unfold Function.Surjective
-    intro n
-    use fromNat n
-    simp only [interp, fromNat]
-    rw [← brak_eq_mk, Quotient.lift_mk RawProd.interp_raw @RawProd.equiv_interp_eq (RawProd.fromNat n)]
-    apply RawProd.interp_fromNat
-    -- this should be way easier to do automatically wtf
+    exact Quotient.sound (RawProd.interp_inj h)
+  · intro n
+    refine ⟨fromNat n, ?_⟩
+    show interp (mk (RawProd.fromNat n)) = n
+    rw [interp_mk]
+    exact RawProd.interp_fromNat n
 
 end QProd

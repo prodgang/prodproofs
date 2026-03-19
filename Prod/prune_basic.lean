@@ -79,7 +79,7 @@ lemma prune_list_allzero_left {xs ys : List RawProd} (haz : allzero xs) :
     obtain ⟨hxz, hxsaz⟩ := allzero_cons haz
     subst hxz
     cases ys with
-    | nil => simp [prune_list]
+    | nil => simp only [prune_list, List.length_cons, List.length_nil, Nat.le_add_left, Nat.min_eq_right, List.replicate_zero]
     | cons y ys =>
       simp only [prune_list, zero_prune_eq_zero, List.length_cons]
       have hmin : min (xs.length + 1) (ys.length + 1) = min xs.length ys.length + 1 := by omega
@@ -186,28 +186,31 @@ lemma zero_prune_zero_eq_zero : zero ⊓ zero = zero := by
 
 
 theorem prune_idem {q : QProd }: q ⊓ q = q := by
-  revert q
-  apply Quotient.ind
-  intro x
-  apply Quotient.sound
-  rw [prune_raw_idem]
-  rfl
+  apply (lift_eq₁ prune_raw_idem) q
+  -- revert q
+  -- apply Quotient.ind
+  -- intro x
+  -- apply Quotient.sound
+  -- rw [prune_raw_idem]
+  -- rfl
 
 
 theorem prune_comm {x y : QProd } : x ⊓ y = y ⊓ x := by
-  revert x y
-  apply Quotient.ind₂
-  intro x y
-  apply Quotient.sound
-  rw [prune_raw_comm]
-  rfl
+  apply (lift_eq₂ prune_raw_comm) x y
+  -- revert x y
+  -- apply Quotient.ind₂
+  -- intro x y
+  -- apply Quotient.sound
+  -- rw [prune_raw_comm]
+  -- rfl
 
 theorem prune_assoc {x y z : QProd} : x ⊓ (y ⊓ z) = (x ⊓ y) ⊓ z := by
-  refine Quotient.inductionOn₃ x y z ?_
-  intro a b c
-  apply Quotient.sound
-  rw [prune_raw_assoc]
-  rfl
+  apply (lift_eq₃ @prune_raw_assoc) x y z
+  -- refine Quotient.inductionOn₃ x y z ?_
+  -- intro a b c
+  -- apply Quotient.sound
+  -- rw [prune_raw_assoc]
+  -- rfl
 
 
 

@@ -413,4 +413,37 @@ lemma rep_equiv_eq {x y : QProd } :  x.rep.equiv y.rep → x = y := by
     _ = mk (rep y) := Quotient.sound hequiv
     _ = y := mk_rep_eq
 
+/-! ### Lifting API
+
+  Every QProd operation `F` is defined via `Quotient.liftOn₂`, so `F (mk a) (mk b) = mk (f_raw a b)`
+  holds definitionally (proved by `rfl`). The `lift_raw_eq₁/₂/₃` lemmas encapsulate the full
+  `Quotient.ind + Eq.trans + congr_arg mk` pattern, making every QProd lifting theorem a one-liner. -/
+
+/-- Lift a unary QProd equation from a raw equation. -/
+lemma lift_eq₁ {F G : QProd → QProd} {f g : RawProd → RawProd}
+    (h : ∀ a, f a = g a)
+    (hF : ∀ a, F (mk a) = mk (f a) := by intro _; rfl)
+    (hG : ∀ a, G (mk a) = mk (g a) := by intro _; rfl) :
+    ∀ x, F x = G x :=
+  Quotient.ind (fun a => (hF a).trans ((congr_arg mk (h a)).trans (hG a).symm))
+
+/-- Lift a binary QProd equation from a raw equation. -/
+lemma lift_eq₂ {F G : QProd → QProd → QProd} {f g : RawProd → RawProd → RawProd}
+    (h : ∀ a b, f a b = g a b)
+    (hF : ∀ a b, F (mk a) (mk b) = mk (f a b) := by intro _ _; rfl)
+    (hG : ∀ a b, G (mk a) (mk b) = mk (g a b) := by intro _ _; rfl) :
+    ∀ x y, F x y = G x y :=
+  fun x y => Quotient.ind₂ (fun a b =>
+    (hF a b).trans ((congr_arg mk (h a b)).trans (hG a b).symm)) x y
+
+/-- Lift a ternary QProd equation from a raw equation. -/
+lemma lift_eq₃ {F G : QProd → QProd → QProd → QProd}
+    {f g : RawProd → RawProd → RawProd → RawProd}
+    (h : ∀ a b c, f a b c = g a b c)
+    (hF : ∀ a b c, F (mk a) (mk b) (mk c) = mk (f a b c) := by intro _ _ _; rfl)
+    (hG : ∀ a b c, G (mk a) (mk b) (mk c) = mk (g a b c) := by intro _ _ _; rfl) :
+    ∀ x y z, F x y z = G x y z :=
+  fun x y z => Quotient.inductionOn₃ x y z (fun a b c =>
+    (hF a b c).trans ((congr_arg mk (h a b c)).trans (hG a b c).symm))
+
 end QProd

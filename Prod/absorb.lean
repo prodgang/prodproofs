@@ -48,3 +48,19 @@ theorem absorption2 {x y : RawProd } : x ⊓ (x ⊔ y) = x := by
 -- this should be enough to prove distrib lattice but lean doesnt have the equivalence :////
 
 end RawProd
+
+namespace QProd
+
+theorem distrib {x y z : QProd }: x ⊓ (y ⊔ z) = (x ⊓ y) ⊔ (x ⊓ z) := by
+  apply (lift_eq₃ @RawProd.distrib) x y z
+
+
+theorem absorption1 {x y : QProd } : x ⊔ (x ⊓ y) = x := by
+  apply (lift_eq₂ @RawProd.absorption1) x y
+
+
+theorem absorption2 {x y : QProd } : x ⊓ (x ⊔ y) = x := by
+  apply (lift_eq₂ @RawProd.absorption2) x y
+
+
+end QProd
