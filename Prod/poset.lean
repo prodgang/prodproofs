@@ -173,7 +173,7 @@ theorem pleq_transitivity {x y z : RawProd} (hxy : x ⊑ y) (hyz : y ⊑ z) : x 
       . exact hxs hxsys hyszs
 
 
-theorem pleq_prune_iff { x y : RawProd } : x ⊑ y ↔ (x ⊓ y).equiv x := by
+theorem pleq_prune_raw_iff { x y : RawProd } : x ⊑ y ↔ (x ⊓ y).equiv x := by
   constructor
   . -- =>
     revert x y
@@ -233,30 +233,44 @@ def pleq (x y : QProd) : Prop :=
 scoped infixl:50 " ⊑ " => pleq
 
 
-lemma pleq_refl {x : QProd } : x ⊑ x := by
+lemma pleq_refl (x : QProd) : x ⊑ x := by
   dsimp only [pleq]
   apply RawProd.pleq_raw_refl
 
 
-theorem pleq_antisymm {x y : QProd} (hxy : x ⊑ y) (hyx : y ⊑ x) : x = y := by
+theorem pleq_antisymm (x y : QProd) (hxy : x ⊑ y) (hyx : y ⊑ x) : x = y := by
   dsimp only [pleq] at hxy hyx
   have hequiv : x.rep.equiv y.rep := RawProd.pleq_raw_antisymm hxy hyx
   exact rep_equiv_eq hequiv
 
 
-theorem pleq_transitivity {x y z : QProd } (hxy : x ⊑ y) (hyz : y ⊑ z) : x ⊑ z := by
+theorem pleq_transitivity (x y z : QProd) (hxy : x ⊑ y) (hyz : y ⊑ z) : x ⊑ z := by
   simp_all only [pleq]
   exact RawProd.pleq_transitivity hxy hyz
 
 
 
-instance : PartialOrder QProd where
-  le := pleq
-  le_refl := @pleq_refl
-  le_trans := @pleq_transitivity
-  le_antisymm  := @pleq_antisymm
+-- instance : PartialOrder QProd where
+--   le := pleq
+--   le_refl := pleq_refl
+--   le_trans := pleq_transitivity
+--   le_antisymm := pleq_antisymm
 
 
+lemma pleq_prune_iff {x y : QProd} : x ⊑ y ↔ x ⊓ y = x := by
+  constructor
+  · intro h
+    have hxy : x ⊓ y = mk (x.rep ⊓ y.rep) := by
+      conv_lhs => rw [← mk_rep_eq (q := x), ← mk_rep_eq (q := y)]
+      exact prune_mk_mk x.rep y.rep
+    rw [hxy]; exact (Quotient.sound (RawProd.pleq_prune_raw_iff.mp h)).trans mk_rep_eq
+  · intro h
+    apply RawProd.pleq_prune_raw_iff.mpr
+    have hxy : x ⊓ y = mk (x.rep ⊓ y.rep) := by
+      conv_lhs => rw [← mk_rep_eq (q := x), ← mk_rep_eq (q := y)]
+      exact prune_mk_mk x.rep y.rep
+    rw [hxy] at h
+    exact Quotient.exact (h.trans mk_rep_eq.symm)
 
 
 end QProd

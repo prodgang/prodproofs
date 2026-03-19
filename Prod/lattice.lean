@@ -1,6 +1,8 @@
 import Prod.quot_defs
 import Prod.prune_basic
 import Prod.graft_basic
+import Prod.poset
+import Mathlib.Order.Lattice
 
 namespace RawProd
 
@@ -46,16 +48,31 @@ end RawProd
 
 namespace QProd
 
-theorem distrib {x y z : QProd }: x ⊓ (y ⊔ z) = (x ⊓ y) ⊔ (x ⊓ z) := by
+theorem distrib (x y z : QProd) : x ⊓ (y ⊔ z) = (x ⊓ y) ⊔ (x ⊓ z) := by
   apply (lift_eq₃ RawProd.distrib) x y z
 
 
-theorem absorption1 {x y : QProd } : x ⊔ (x ⊓ y) = x := by
+theorem absorption1 (x y : QProd) : x ⊔ (x ⊓ y) = x := by
   apply (lift_eq₂ RawProd.absorption1) x y
 
 
-theorem absorption2 {x y : QProd } : x ⊓ (x ⊔ y) = x := by
+theorem absorption2 (x y : QProd) : x ⊓ (x ⊔ y) = x := by
   apply (lift_eq₂ RawProd.absorption2) x y
+
+
+instance : Max QProd := ⟨graft⟩
+instance : Min QProd := ⟨prune⟩
+
+instance : Lattice QProd := Lattice.mk'
+  (sup_comm  := graft_comm)
+  (sup_assoc := fun a b c => (graft_assoc a b c).symm)
+  (inf_comm  := prune_comm)
+  (inf_assoc := fun a b c => (prune_assoc a b c).symm)
+  (sup_inf_self := absorption1)
+  (inf_sup_self := absorption2)
+
+instance : DistribLattice QProd := DistribLattice.ofInfSupLe
+  fun x y z => le_of_eq (distrib x y z)
 
 
 end QProd

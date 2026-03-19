@@ -171,13 +171,13 @@ infixl:70 " ⊔ " => graft
 /-- Core computation rule: graft reduces to mk on representatives. -/
 lemma graft_mk_mk (x y : RawProd) : (mk x) ⊔ (mk y) = mk (x ⊔ y) := rfl
 
-theorem graft_idem {x : QProd} : x ⊔ x = x :=
+theorem graft_idem (x : QProd) : x ⊔ x = x :=
   by apply (lift_eq₁ graft_raw_idem) x
 
-theorem graft_comm {x y : QProd} : x ⊔ y = y ⊔ x :=
+theorem graft_comm (x y : QProd) : x ⊔ y = y ⊔ x :=
   by apply (lift_eq₂ graft_raw_comm) x y
 
-theorem graft_assoc {x y z : QProd} : x ⊔ (y ⊔ z) = (x ⊔ y) ⊔ z :=
+theorem graft_assoc (x y z : QProd) : x ⊔ (y ⊔ z) = (x ⊔ y) ⊔ z :=
   by apply (lift_eq₃ graft_raw_assoc) x y z
 
 end QProd

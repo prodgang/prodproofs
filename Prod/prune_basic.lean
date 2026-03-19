@@ -184,13 +184,13 @@ lemma zero_prune_zero_eq_zero : zero ⊓ zero = zero := by
 
 
 
-theorem prune_idem {q : QProd }: q ⊓ q = q := by
+theorem prune_idem (q : QProd) : q ⊓ q = q := by
   apply (lift_eq₁ prune_raw_idem) q
 
-theorem prune_comm {x y : QProd } : x ⊓ y = y ⊓ x := by
+theorem prune_comm (x y : QProd) : x ⊓ y = y ⊓ x := by
   apply (lift_eq₂ prune_raw_comm) x y
 
-theorem prune_assoc {x y z : QProd} : x ⊓ (y ⊓ z) = (x ⊓ y) ⊓ z := by
+theorem prune_assoc (x y z : QProd) : x ⊓ (y ⊓ z) = (x ⊓ y) ⊓ z := by
   apply (lift_eq₃ prune_raw_assoc) x y z
 
 
