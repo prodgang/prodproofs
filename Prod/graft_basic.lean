@@ -45,11 +45,6 @@ lemma brak_graft_nil_eq_self {xs : List RawProd} : (brak xs) ⊔ (brak []) = bra
 @[simp]
 lemma brak_nil_graft_eq_self (xs : List RawProd) : (brak []) ⊔ (brak xs) = brak xs := by
   simp only [graft_raw, graft_list_nil_left]
-  -- cases xs
-  -- . simp only [List.zipWithAll_nil, Option.getD_some, Option.getD_none, graft_zero_eq_self,
-  --   List.map_nil]
-  -- . simp only [List.nil_zipWithAll, Option.getD_none, Option.getD_some, zero_graft_eq_self,
-  --   List.map_cons, List.map_id_fun', id_eq]
 
 
 @[simp]
@@ -61,7 +56,7 @@ lemma graft_nil_eq_self (x : RawProd) (hnz: x ≠ zero) : x ⊔ (brak []) = x :=
 
 
 @[simp]
-lemma nil_prune_eq_self {x : RawProd} (hnx : x ≠ zero) : (brak []) ⊔ x = x := by
+lemma nil_graft_eq_self {x : RawProd} (hnx : x ≠ zero) : (brak []) ⊔ x = x := by
   cases x
   . simp only [graft_zero_eq_self, reduceCtorEq]; contradiction
   . simp only [brak_nil_graft_eq_self]
@@ -81,8 +76,7 @@ theorem graft_raw_idem (x : RawProd) : x ⊔ x = x := by
   | h_zero => apply graft_zero_eq_self
   | h_nil => exact brak_graft_nil_eq_self
   | h_cons x xs hx hxs =>
-      simp only [graft_raw, graft_list, brak.injEq, List.cons.injEq]
-      simp only [graft_raw, brak.injEq] at hxs
+      simp only [graft_raw, graft_list, brak.injEq, List.cons.injEq] at hxs ⊢
       exact ⟨hx, hxs⟩
 
 
@@ -90,12 +84,11 @@ theorem graft_raw_comm : ∀ x y, x ⊔ y = y ⊔ x := by
   apply RawProd.induction_list₂
   case h_zero_left => simp only [zero_graft_eq_self, graft_zero_eq_self, implies_true]
   case h_zero_right => simp only [zero_graft_eq_self, graft_zero_eq_self, implies_true]
-  case h_nil_left => simp only [ne_eq, brak_neq_zero, not_false_eq_true, nil_prune_eq_self, graft_nil_eq_self, implies_true]
-  case h_nil_right => simp only [ne_eq, brak_neq_zero, not_false_eq_true, graft_nil_eq_self, nil_prune_eq_self, implies_true]
+  case h_nil_left => simp only [ne_eq, brak_neq_zero, not_false_eq_true, nil_graft_eq_self, graft_nil_eq_self, implies_true]
+  case h_nil_right => simp only [ne_eq, brak_neq_zero, not_false_eq_true, graft_nil_eq_self, nil_graft_eq_self, implies_true]
   case h_cons_cons =>
     intro x y xs ys hx hxs
-    simp only [graft_raw, graft_list, brak.injEq, List.cons.injEq]
-    simp only [graft_raw, brak.injEq] at hxs
+    simp only [graft_raw, graft_list, brak.injEq, List.cons.injEq] at hxs ⊢
     exact ⟨hx, hxs⟩
 
 
@@ -105,13 +98,12 @@ theorem graft_raw_assoc : ∀ x y z, x ⊔ (y ⊔ z) = (x ⊔ y) ⊔ z := by
   case h_zero_left => simp only [zero_graft_eq_self, implies_true]
   case h_zero_mid => simp only [zero_graft_eq_self, graft_zero_eq_self, implies_true]
   case h_zero_right => simp only [graft_zero_eq_self, implies_true]
-  case h_nil_left => simp only [ne_eq, brak_graft_brak_neq_zero, not_false_eq_true, nil_prune_eq_self, brak_neq_zero, implies_true]
-  case h_nil_mid =>  simp only [ne_eq, brak_neq_zero, not_false_eq_true, nil_prune_eq_self, graft_nil_eq_self, implies_true]
+  case h_nil_left => simp only [ne_eq, brak_graft_brak_neq_zero, not_false_eq_true, nil_graft_eq_self, brak_neq_zero, implies_true]
+  case h_nil_mid =>  simp only [ne_eq, brak_neq_zero, not_false_eq_true, nil_graft_eq_self, graft_nil_eq_self, implies_true]
   case h_nil_right => simp only [graft_raw, graft_list_nil_right, ne_eq, brak_neq_zero, not_false_eq_true, graft_nil_eq_self, implies_true]
   case h_cons_cons_cons =>
     intros x y z xs ys zs hx hxs
-    simp only [graft_raw, graft_list, brak.injEq, List.cons.injEq]
-    simp only [graft_raw, brak.injEq] at hxs
+    simp only [graft_raw, graft_list, brak.injEq, List.cons.injEq] at hxs ⊢
     exact ⟨hx, hxs⟩
 
 
@@ -171,11 +163,6 @@ open RawProd
 def graft (x y : QProd) : QProd :=
   Quotient.liftOn₂ x y (fun a b => mk (RawProd.graft_raw a b)) fun _ _ _ _ hx hy =>
     Quotient.sound (RawProd.graft_raw_respects_equiv hx hy)
-
-
--- def graft (x y : QProd) : QProd :=
---   mk (RawProd.graft_raw (rep x) (rep y))
---   --mk (RawProd.normalize (RawProd.graft_raw (rep x) (rep y)))
 
 
 

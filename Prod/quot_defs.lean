@@ -283,31 +283,23 @@ lemma trim_cons {x : RawProd} {xs : List RawProd} : trim (x::xs) = if (allzero (
 
 
 
+-- If two lists have the same trim, prepending the same element gives the same trim.
+lemma trim_cons_congr (a : RawProd) {as bs : List RawProd}
+    (h : trim as = trim bs) : trim (a :: as) = trim (a :: bs) := by
+  simp only [trim_cons]
+  have haz : allzero (a :: as) ↔ allzero (a :: bs) := by
+    constructor <;> intro haz <;> obtain ⟨ha, hazs⟩ := allzero_cons haz
+    · exact allzero_iff.mpr fun x hx => (List.mem_cons.mp hx).elim
+        (·.trans ha) (allzero_iff.mp (trim_eq_nil_iff.mp (h ▸ trim_eq_nil_iff.mpr hazs)) x)
+    · exact allzero_iff.mpr fun x hx => (List.mem_cons.mp hx).elim
+        (·.trans ha) (allzero_iff.mp (trim_eq_nil_iff.mp (h.symm ▸ trim_eq_nil_iff.mpr hazs)) x)
+  simp only [haz, h]
+
 theorem cons_equiv_cons_iff {x y : RawProd} {xs ys : List RawProd} : (x.equiv y ∧ (brak xs).equiv (brak ys)) ↔ (brak (x :: xs)).equiv (brak (y :: ys)) := by
 constructor
-. intro h
-  obtain ⟨hxy, hbb⟩ := h
+. intro ⟨hxy, hbb⟩
   simp_all only [equiv, normalize, brak.injEq, List.map_cons]
-  simp only [trim_cons]
-  split_ifs
-  . -- [] = []
-    rfl
-  . --xs [] ??
-    rename_i hxs hys
-    have hy_z : y.normalize = zero := by rw [allzero_iff] at hxs; exact hxs y.normalize (List.mem_cons_self)
-    have hxs_az : allzero (List.map normalize xs) := by rw [allzero_iff] at hxs ⊢; intro x' hx'; apply hxs; apply List.mem_cons_of_mem; exact hx'   -- use hxs and some mem_cons situation
-    have hys_az : allzero (List.map normalize ys) := by have hxs_nil := trim_eq_nil_iff.mpr hxs_az; rw [hxs_nil] at hbb; apply trim_eq_nil_iff.mp; exact hbb.symm -- use hx_az and hbb
-    have h_fin : allzero (y.normalize :: List.map normalize ys) := by simp [allzero, List.length_cons, List.length_map] at ⊢ hys_az; rw [hy_z, hys_az]; simp only [List.replicate_succ]
-    exact hys h_fin
-  . -- [] ys (symm of above)
-    rename_i hxs hys
-    have hy_z : y.normalize = zero := by rw [allzero_iff] at hys; exact hys y.normalize (List.mem_cons_self)
-    have hys_az : allzero (List.map normalize ys) := by rw [allzero_iff] at hys ⊢; intro x' hx'; apply hys; apply List.mem_cons_of_mem; exact hx'   -- use hxs and some mem_cons situation
-    have hxs_az : allzero (List.map normalize xs) := by have hxs_nil := trim_eq_nil_iff.mpr hys_az; rw [hxs_nil] at hbb; apply trim_eq_nil_iff.mp; exact hbb -- use hx_az and hbb
-    have h_fin : allzero (y.normalize :: List.map normalize xs) := by simp [allzero, List.length_cons, List.length_map] at ⊢ hys_az; rw [hy_z, hxs_az]; simp only [List.length_map, List.replicate_succ]
-    exact hxs h_fin
-  . simp only [List.cons.injEq, true_and]
-    exact hbb
+  exact trim_cons_congr _ hbb
 . intro h
   simp_all only [equiv, normalize, List.map_cons, trim_cons, brak.injEq]
   split at h <;> split at h

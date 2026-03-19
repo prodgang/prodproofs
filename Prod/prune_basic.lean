@@ -113,8 +113,7 @@ theorem prune_raw_comm (x y : RawProd ): x ⊓ y = y ⊓ x := by
 
 
 
-theorem prune_raw_assoc {x y z : RawProd }: x ⊓ (y ⊓ z) = (x ⊓ y) ⊓ z := by
-  revert x y z
+theorem prune_raw_assoc : ∀ x y z : RawProd, x ⊓ (y ⊓ z) = (x ⊓ y) ⊓ z := by
   apply RawProd.induction_list₃
   case h_zero_left => simp only [zero_prune_eq_zero, implies_true];
   case h_zero_mid => simp only [zero_prune_eq_zero, prune_zero_eq_zero, implies_true]
@@ -187,30 +186,12 @@ lemma zero_prune_zero_eq_zero : zero ⊓ zero = zero := by
 
 theorem prune_idem {q : QProd }: q ⊓ q = q := by
   apply (lift_eq₁ prune_raw_idem) q
-  -- revert q
-  -- apply Quotient.ind
-  -- intro x
-  -- apply Quotient.sound
-  -- rw [prune_raw_idem]
-  -- rfl
-
 
 theorem prune_comm {x y : QProd } : x ⊓ y = y ⊓ x := by
   apply (lift_eq₂ prune_raw_comm) x y
-  -- revert x y
-  -- apply Quotient.ind₂
-  -- intro x y
-  -- apply Quotient.sound
-  -- rw [prune_raw_comm]
-  -- rfl
 
 theorem prune_assoc {x y z : QProd} : x ⊓ (y ⊓ z) = (x ⊓ y) ⊓ z := by
-  apply (lift_eq₃ @prune_raw_assoc) x y z
-  -- refine Quotient.inductionOn₃ x y z ?_
-  -- intro a b c
-  -- apply Quotient.sound
-  -- rw [prune_raw_assoc]
-  -- rfl
+  apply (lift_eq₃ prune_raw_assoc) x y z
 
 
 

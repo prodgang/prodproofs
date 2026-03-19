@@ -207,15 +207,10 @@ theorem pleq_prune_iff { x y : RawProd } : x ⊑ y ↔ (x ⊓ y).equiv x := by
     case h_nil_right =>
       intro xs hprune
       rw [prune_nil_eq_nil] at hprune
-      have hxs_az : allzero xs := by
-        simp only [equiv, normalize, trim, List.map_nil, List.rdropWhile_nil, brak.injEq, List.nil_eq, List.rdropWhile_eq_nil_iff, List.mem_map, beq_iff_eq, forall_exists_index, and_imp, forall_apply_eq_imp_iff₂] at hprune
-        simp only [allzero_iff]
-        intro x hin
-        have hn := hprune x hin
-        exact (zero_eq_normalize_eq_zero hn.symm)
+      have hxs_az : allzero xs := nil_equiv_brak_iff_allzero.mp hprune
       simp only [allzero] at hxs_az
       rw [hxs_az]
-      simp only [replicate_zero_pleq_brak]
+      exact replicate_zero_pleq_brak []
 
     case h_cons_cons =>
       intro xh yh xt yt hh ht hcons
