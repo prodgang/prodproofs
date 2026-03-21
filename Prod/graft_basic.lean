@@ -93,7 +93,7 @@ theorem graft_raw_comm : ∀ x y, x ⊔ y = y ⊔ x := by
 
 
 
-theorem graft_raw_assoc : ∀ x y z, x ⊔ (y ⊔ z) = (x ⊔ y) ⊔ z := by
+theorem graft_raw_assoc : ∀ x y z, (x ⊔ y) ⊔ z = x ⊔ (y ⊔ z):= by
   apply RawProd.induction_list₃
   case h_zero_left => simp only [zero_graft_eq_self, implies_true]
   case h_zero_mid => simp only [zero_graft_eq_self, graft_zero_eq_self, implies_true]
@@ -107,7 +107,8 @@ theorem graft_raw_assoc : ∀ x y z, x ⊔ (y ⊔ z) = (x ⊔ y) ⊔ z := by
     exact ⟨hx, hxs⟩
 
 
-lemma graft_list_allzero_left {xs ys : List RawProd} (haz : allzero xs) : (brak ys).equiv (brak (graft_list xs ys)) := by
+lemma allzero_graft_eq_self {xs ys : List RawProd} (haz : allzero xs) : (brak ys).equiv (brak xs ⊔ brak ys) := by
+  simp only [graft_raw]
   induction xs generalizing ys with
   | nil => simp only [graft_list]; exact equiv_refl
   | cons x xs ih =>
@@ -119,11 +120,12 @@ lemma graft_list_allzero_left {xs ys : List RawProd} (haz : allzero xs) : (brak 
       exact nil_equiv_brak_iff_allzero.mpr haz
     | cons y ys =>
       simp only [graft_list, zero_graft_eq_self]
-      exact cons_equiv_cons_iff.mp ⟨equiv_refl, ih hxsaz⟩
+      apply cons_equiv_cons_iff.mp
+      constructor
+      . exact equiv_refl
+      . apply ih
+        exact hxsaz
 
-lemma graft_raw_trim_equiv {xs ys : List RawProd} (h : (brak []).equiv (brak xs)) : (brak ys).equiv (brak xs ⊔ brak ys) := by
-  simp only [graft_raw]
-  exact graft_list_allzero_left (nil_equiv_brak_iff_allzero.mp h)
 
 
 theorem graft_raw_respects_equiv {x x' y y' : RawProd} (hx : x.equiv x') (hy : y.equiv y') : (x ⊔ y).equiv (x' ⊔ y') := by
@@ -133,12 +135,12 @@ theorem graft_raw_respects_equiv {x x' y y' : RawProd} (hx : x.equiv x') (hy : y
   case h_zero2 => intro x y z h1 h2; rw [zero_equiv_eq_zero h1]; simp only [zero_graft_eq_self]; exact h2
   case h_zero3 => intro x y z h1 h2; rw [equiv_zero_eq_zero h2]; simp only [graft_zero_eq_self]; exact h1
   case h_zero4 => intro x y z h1 h2; rw [zero_equiv_eq_zero h2]; simp only [graft_zero_eq_self]; exact h1
-  case h_nil1 => intro xs ys zs h1 h2; simp only [brak_nil_graft_eq_self]; exact equiv_trans h2 (graft_raw_trim_equiv h1)
-  case h_nil2 => intro ws ys zs h1 h2; simp only [brak_nil_graft_eq_self]; have hstep : (brak ys).equiv (brak ws ⊔ brak ys) := graft_raw_trim_equiv (equiv_symm h1); exact equiv_trans (equiv_symm hstep) h2
-  case h_nil3 => intro ws xs zs h1 h2; simp only [brak_graft_nil_eq_self]; have hstep : (brak xs).equiv (brak zs ⊔ brak xs) := graft_raw_trim_equiv h2; rw [graft_raw_comm (brak zs) (brak xs)] at hstep; exact equiv_trans h1 hstep
+  case h_nil1 => intro xs ys zs h1 h2; simp only [brak_nil_graft_eq_self]; exact equiv_trans h2 (allzero_graft_eq_self (nil_equiv_brak_iff_allzero.mp h1))
+  case h_nil2 => intro ws ys zs h1 h2; simp only [brak_nil_graft_eq_self]; have hstep : (brak ys).equiv (brak ws ⊔ brak ys) := allzero_graft_eq_self (nil_equiv_brak_iff_allzero.mp (equiv_symm h1)); exact equiv_trans (equiv_symm hstep) h2
+  case h_nil3 => intro ws xs zs h1 h2; simp only [brak_graft_nil_eq_self]; have hstep : (brak xs).equiv (brak zs ⊔ brak xs) := allzero_graft_eq_self (nil_equiv_brak_iff_allzero.mp h2); rw [graft_raw_comm (brak zs) (brak xs)] at hstep; exact equiv_trans h1 hstep
   case h_nil4 =>
     intro ws xs ys h1 h2; simp only [brak_graft_nil_eq_self]
-    have hstep : (brak ws).equiv (brak ys ⊔ brak ws) := graft_raw_trim_equiv (equiv_symm h2)
+    have hstep : (brak ws).equiv (brak ys ⊔ brak ws) := allzero_graft_eq_self (nil_equiv_brak_iff_allzero.mp (equiv_symm h2))
     rw [graft_raw_comm (brak ys) (brak ws)] at hstep
     exact equiv_trans (equiv_symm hstep) h1
   case h_cons_cons_cons_cons =>
@@ -171,13 +173,13 @@ infixl:70 " ⊔ " => graft
 /-- Core computation rule: graft reduces to mk on representatives. -/
 lemma graft_mk_mk (x y : RawProd) : (mk x) ⊔ (mk y) = mk (x ⊔ y) := rfl
 
-theorem graft_idem (x : QProd) : x ⊔ x = x :=
-  by apply (lift_eq₁ graft_raw_idem) x
+theorem graft_idem : ∀ x : QProd, x ⊔ x = x :=
+  by apply lift_eq₁ graft_raw_idem
 
-theorem graft_comm (x y : QProd) : x ⊔ y = y ⊔ x :=
-  by apply (lift_eq₂ graft_raw_comm) x y
+theorem graft_comm : ∀ x y  : QProd,  x ⊔ y = y ⊔ x :=
+  by apply lift_eq₂ graft_raw_comm
 
-theorem graft_assoc (x y z : QProd) : x ⊔ (y ⊔ z) = (x ⊔ y) ⊔ z :=
-  by apply (lift_eq₃ graft_raw_assoc) x y z
+theorem graft_assoc : ∀ x y z : QProd,  (x ⊔ y) ⊔ z = x ⊔ (y ⊔ z) :=
+  by apply lift_eq₃ graft_raw_assoc
 
 end QProd

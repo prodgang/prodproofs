@@ -87,9 +87,26 @@ lemma prune_list_allzero_left {xs ys : List RawProd} (haz : allzero xs) :
 
 lemma allzero_prune_eq_allzero {xs ys : List RawProd} (haz : allzero xs) :
     ((brak xs) ⊓ (brak ys)) = brak (List.replicate (min xs.length ys.length) zero) := by
-  simp only [prune_raw, prune_list_allzero_left haz]
+  simp only [prune_raw]
+  induction xs generalizing ys with
+  | nil => simp [prune_list]
+  | cons x xs ih =>
+    obtain ⟨hxz, hxsaz⟩ := allzero_cons haz
+    subst hxz
+    cases ys with
+    | nil => simp only [prune_list, List.length_cons, List.length_nil, Nat.le_add_left, Nat.min_eq_right, List.replicate_zero]
+    | cons y ys =>
+      simp only [prune_list, zero_prune_eq_zero, List.length_cons]
+      have hmin : min (xs.length + 1) (ys.length + 1) = min xs.length ys.length + 1 := by omega
+      rw [hmin, List.replicate_succ]
+      specialize ih hxsaz
+      . exact ys
+      simp only [brak.injEq, List.cons.injEq, true_and]
+      simp only [brak.injEq] at ih
+      exact ih
 
-theorem prune_raw_idem (x : RawProd) : x ⊓ x = x := by
+theorem prune_raw_idem : ∀ x : RawProd, x ⊓ x = x := by
+  intro x
   induction x using RawProd.induction_list with
   | h_zero => apply prune_zero_eq_zero
   | h_nil => apply brak_prune_nil_eq_nil
@@ -97,8 +114,7 @@ theorem prune_raw_idem (x : RawProd) : x ⊓ x = x := by
     simp_all only [prune_raw, brak.injEq, prune_list]
 
 
-theorem prune_raw_comm (x y : RawProd ): x ⊓ y = y ⊓ x := by
-  revert x y
+theorem prune_raw_comm : ∀ x y : RawProd, x ⊓ y = y ⊓ x := by
   apply RawProd.induction_list₂
   case h_zero_left => simp only [zero_prune_eq_zero, prune_zero_eq_zero, implies_true]
   case h_zero_right => simp only [prune_zero_eq_zero, zero_prune_eq_zero, implies_true]
@@ -110,10 +126,7 @@ theorem prune_raw_comm (x y : RawProd ): x ⊓ y = y ⊓ x := by
     exact ⟨hx, hxs⟩
 
 
-
-
-
-theorem prune_raw_assoc : ∀ x y z : RawProd, x ⊓ (y ⊓ z) = (x ⊓ y) ⊓ z := by
+theorem prune_raw_assoc : ∀ x y z : RawProd, (x ⊓ y) ⊓ z = x ⊓ (y ⊓ z) := by
   apply RawProd.induction_list₃
   case h_zero_left => simp only [zero_prune_eq_zero, implies_true];
   case h_zero_mid => simp only [zero_prune_eq_zero, prune_zero_eq_zero, implies_true]
@@ -184,15 +197,13 @@ lemma zero_prune_zero_eq_zero : zero ⊓ zero = zero := by
 
 
 
-theorem prune_idem (q : QProd) : q ⊓ q = q := by
-  apply (lift_eq₁ prune_raw_idem) q
+theorem prune_idem : ∀ q : QProd, q ⊓ q = q := by
+  apply lift_eq₁ prune_raw_idem
 
-theorem prune_comm (x y : QProd) : x ⊓ y = y ⊓ x := by
-  apply (lift_eq₂ prune_raw_comm) x y
+theorem prune_comm : ∀ x y : QProd,  x ⊓ y = y ⊓ x := by
+  apply lift_eq₂ prune_raw_comm
 
-theorem prune_assoc (x y z : QProd) : x ⊓ (y ⊓ z) = (x ⊓ y) ⊓ z := by
-  apply (lift_eq₃ prune_raw_assoc) x y z
-
-
+theorem prune_assoc :  ∀ x y z : QProd, (x ⊓ y) ⊓ z  = x ⊓ (y ⊓ z):= by
+  apply lift_eq₃ prune_raw_assoc
 
 end QProd

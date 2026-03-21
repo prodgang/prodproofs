@@ -65,9 +65,9 @@ instance : Min QProd := ⟨prune⟩
 
 instance : Lattice QProd := Lattice.mk'
   (sup_comm  := graft_comm)
-  (sup_assoc := fun a b c => (graft_assoc a b c).symm)
+  (sup_assoc := graft_assoc)
   (inf_comm  := prune_comm)
-  (inf_assoc := fun a b c => (prune_assoc a b c).symm)
+  (inf_assoc := prune_assoc)
   (sup_inf_self := absorption1)
   (inf_sup_self := absorption2)
 
