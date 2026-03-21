@@ -161,28 +161,23 @@ lemma interp_list_singleton (x : RawProd) (i : ℕ ) : 0 < interp_list [x] i := 
   simp_all only [pow_pos]
 
 
-lemma interp_list_gt_zero {i : ℕ} (xs : List RawProd): 0 < interp_list xs i := by
+lemma interp_list_neq_zero {i : ℕ} (xs : List RawProd): interp_list xs i ≠ 0 := by
   induction xs generalizing i with
-  | nil => simp only [interp_list, zero_lt_one]
+  | nil => simp only [interp_list, ne_eq, one_ne_zero, not_false_eq_true]
   | cons x xs ih =>
     simp only [interp_list]
-    apply mul_pos
-    · apply Nat.pow_pos
-      apply Nat.Prime.pos
-      apply Nat.prime_nth_prime
-    · apply ih
+    exact mul_ne_zero (pow_ne_zero _ (Nat.prime_nth_prime i).pos.ne') ih
+
+lemma interp_list_gt_zero {i : ℕ} (xs : List RawProd): 0 < interp_list xs i :=
+  Nat.pos_of_ne_zero (interp_list_neq_zero xs)
 
 
 
 
-lemma interpraw_eq_zero_eq_zero (x : RawProd) (hz : RawProd.interp_raw x = 0) : x = RawProd.zero := by
+lemma interp_raw_eq_zero_eq_zero (x : RawProd) (hz : RawProd.interp_raw x = 0) : x = RawProd.zero := by
   match x with
   | zero => simp only
-  | brak xs =>
-    simp [interp_raw] at hz
-    absurd hz
-    have hgtz : 0 < interp_list xs 0 := interp_list_gt_zero xs
-    simp_all only [lt_self_iff_false]
+  | brak xs => simp [interp_raw, interp_list_neq_zero] at hz
 
 
 

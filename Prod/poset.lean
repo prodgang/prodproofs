@@ -1,23 +1,10 @@
 import Prod.quot_defs
 import Prod.prune_basic
+import Prod.bij
 import Mathlib.Data.Prod.Basic
 import Mathlib.Order.Defs.PartialOrder
 
 namespace RawProd
-
--- couldnt get inductive to work so doing good old def instead
-
-
--- make literally ∀ rather than .Forall
--- def pleq_raw : (RawProd ) → (RawProd) →  Prop
---   | zero, _        => True
---   | brak _, zero        => False
---   | brak xs, brak ys => ∀ xy ∈ (pad xs ys), (pleq_raw xy.1 xy.2)
--- termination_by x y => x.size + y.size
--- decreasing_by
---   sorry
-
-
 
 mutual
   def pleq_raw : RawProd → RawProd → Prop
@@ -68,7 +55,7 @@ lemma pleq_head_tail_imp_pleq_cons {x y : RawProd} {xs ys : List RawProd } (h_he
   simp_all only [pleq_raw, pleq_list, and_self]
 
 
-lemma brak_pleq_nil_eq_replicate_zero {xs : List RawProd} (hleq: brak xs ⊑ brak []) : xs = List.replicate (xs.length) zero := by
+lemma brak_pleq_nil_allzero {xs : List RawProd} (hleq: brak xs ⊑ brak []) : allzero xs := by
   cases xs with
   | nil => rfl
   | cons x xs =>
@@ -96,7 +83,7 @@ lemma brak_pleq_replicate_zero_eq_replicate_zero {xs : List RawProd} (hpleq: ∃
   | cons x xs ihx =>
     obtain ⟨n, hn⟩ := hpleq
     induction n with
-    | zero => simp only [List.replicate_zero] at hn; exact brak_pleq_nil_eq_replicate_zero hn;
+    | zero => simp only [List.replicate_zero] at hn; exact brak_pleq_nil_allzero hn;
     | succ n ihn =>
       simp only [List.replicate_succ] at hn
       obtain ⟨hx,hxs⟩ := cons_pleq_cons_iff.mp hn
@@ -130,11 +117,11 @@ theorem pleq_raw_antisymm {x y : RawProd} (h1 : x ⊑ y) (h2 : y ⊑ x) : x.equi
   case h_zero_right => intro x hx hz; apply pleq_zero_eq_zero at hx ; simp only [equiv, normalize_zero_eq_zero, hx]
   case h_nil_left =>
     intro ys h1 h2
-    rw [brak_pleq_nil_eq_replicate_zero h2]
+    rw [brak_pleq_nil_allzero h2]
     simp only [equiv, normalize, List.map_nil, trim_nil_eq_nil, List.map_replicate, normalize_zero_eq_zero, trim_replicate_zero_eq_nil]
   case h_nil_right =>
     intro ys h1 h2
-    rw [brak_pleq_nil_eq_replicate_zero h1]
+    rw [brak_pleq_nil_allzero h1]
     simp only [equiv, normalize, List.map_nil, trim_nil_eq_nil, List.map_replicate, normalize_zero_eq_zero, trim_replicate_zero_eq_nil]
   case h_cons_cons =>
     intro x y xs ys hx hxs hleq hleq2
@@ -155,11 +142,11 @@ theorem pleq_transitivity {x y z : RawProd} (hxy : x ⊑ y) (hyz : y ⊑ z) : x 
   case h_nil_left => simp only [nil_pleq_brak, implies_true]
   case h_nil_mid =>
     intro xs zs hl1 hl2
-    rw [brak_pleq_nil_eq_replicate_zero hl1]
+    rw [brak_pleq_nil_allzero hl1]
     apply replicate_zero_pleq_brak
   case h_nil_right =>
     intro xs zs hl1 hl2
-    rw [brak_pleq_nil_eq_replicate_zero hl2] at hl1
+    rw [brak_pleq_nil_allzero hl2] at hl1
     have hxs : xs = List.replicate xs.length zero := by apply brak_pleq_replicate_zero_eq_replicate_zero; use zs.length;
     rw [hxs]
     apply replicate_zero_pleq_brak
@@ -184,9 +171,9 @@ theorem pleq_prune_raw_iff { x y : RawProd } : x ⊑ y ↔ (x ⊓ y).equiv x := 
     case h_nil_right =>
       -- use brak xs ⊑ [] to get allzero xs and then...
       intro xs hleq
-      have haz := brak_pleq_nil_eq_replicate_zero hleq
+      have haz := brak_pleq_nil_allzero hleq
       rw [brak_prune_nil_eq_nil, haz]
-      simp [equiv, normalize, trim_nil_eq_nil]
+      simp only [equiv, normalize_nil_eq_nil, normalize, equiv_zero_eq_zero, List.map_replicate, brak.injEq, List.nil_eq]
       apply trim_eq_nil_iff.mpr
       simp only [allzero, List.length_replicate]
     case h_cons_cons =>
@@ -219,6 +206,60 @@ theorem pleq_prune_raw_iff { x y : RawProd } : x ⊑ y ↔ (x ⊓ y).equiv x := 
       apply cons_pleq_cons_iff.mpr
       simp only [prune_raw] at ht
       exact ⟨hh hl, ht hr⟩
+
+
+theorem pleq_dvd {x y : RawProd } (hnz: x ≠ zero) (hlq: x ⊑ y ): interp_raw x ∣ interp_raw y := by
+  revert x y
+  apply induction_list₂
+  case h_zero_left => intros; contradiction;
+  case h_zero_right => intro x hx hx2; exfalso; exact hx (pleq_zero_eq_zero hx2)
+  case h_nil_left => intros; simp only [interp_raw, interp_raw_nil, isUnit_iff_eq_one, IsUnit.dvd]
+  case h_nil_right => intro xs hnz hl; have haz :=  brak_pleq_nil_allzero hl; simp only [interp_raw, interp_allzero_eq_one haz, interp_raw_nil, dvd_refl]
+  case h_cons_cons =>
+    intro x y xs ys h1 h2 h3 h4
+    -- turn x | y to x.factorization < y.factorization
+    apply (Nat.factorization_prime_le_iff_dvd (interp_list_neq_zero _) (interp_list_neq_zero _)).mp
+    intro p hp
+    obtain ⟨hxy, hbrak⟩ := cons_pleq_cons_iff.mp h4
+    obtain ⟨i, hi⟩ := prime_index hp
+    rw [hi]
+    -- apply bridge lemma
+    rw [factorization_interp_list_zero, factorization_interp_list_zero]
+    cases i with
+    | zero =>
+      -- head, wrangle h1
+      simp only [get_cons_zero]
+      by_cases hxz : x = zero
+      · simp only [hxz, interp_raw_zero, zero_le]
+      · have hyz : y ≠ zero := fun h => hxz (pleq_zero_eq_zero (h ▸ hxy))
+        have hynz : interp_raw y ≠ 0 := fun h => hyz (interp_raw_eq_zero_eq_zero y h)
+        exact Nat.le_of_dvd (by omega) (h1 hxz hxy)
+    | succ j =>
+      --tail, wrangle h2
+      simp only [get_cons_succ]
+      have hdvd := h2 brak_neq_zero hbrak
+      simp only [interp_raw] at hdvd
+      have hle := (Nat.factorization_prime_le_iff_dvd
+        (interp_list_neq_zero xs) (interp_list_neq_zero ys)).mpr hdvd (Nat.nth Nat.Prime j) (Nat.prime_nth_prime j)
+      rw [← factorization_interp_list_zero j (xs := xs), ← factorization_interp_list_zero j (xs := ys)]
+      exact hle
+
+-- Converse of pleq_dvd fails:
+--   x = [[[]]] = 2^(2^1) = 4,  y = [[0,[]]] = 2^(2^0 · 3^1) = 2^3 = 8
+--   so interp_raw x = 4,  interp_raw y = 8,  4 ∣ 8,  but x ⊄ y.
+theorem converse_counterexample :
+    let x := brak [brak [brak []]]
+    let y := brak [brak [zero, brak []]]
+    interp_raw x = 4 ∧ interp_raw y = 8 ∧ (4 : ℕ) ∣ 8 ∧ ¬ (x ⊑ y) := by
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · simp only [interp_raw, interp_list, Nat.nth_prime_zero_eq_two]; norm_num
+  · simp only [interp_raw, interp_list, Nat.nth_prime_zero_eq_two]; norm_num
+  · norm_num
+  · intro h
+    have : brak [] ⊑ (zero : RawProd) :=
+      (cons_pleq_cons_iff.mp (cons_pleq_cons_iff.mp h).1).1
+    simp only [pleq_raw] at this
+
 
 
 end RawProd

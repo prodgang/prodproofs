@@ -84,6 +84,11 @@ lemma factorization_interp_list {xs : List RawProd} (k i : ℕ) :
       . apply ne_of_gt; apply interp_list_gt_zero
 
 
+/-- k=0 specialisation of the Bridge Lemma: the exponent of the i-th prime in `interp_list xs 0`
+    equals `interp_raw (get xs i)`. -/
+lemma factorization_interp_list_zero {xs : List RawProd} (i : ℕ) :
+    (interp_list xs 0).factorization (Nat.nth Nat.Prime i) = interp_raw (get xs i) := by
+  have h := factorization_interp_list (xs := xs) 0 i; simp only [Nat.zero_add] at h; exact h
 
 
 lemma brak_equiv_elementwise {xs ys : List RawProd}
@@ -137,13 +142,13 @@ theorem interp_inj {x y : RawProd} : interp_raw x = interp_raw y → x.equiv y :
   | h_zero =>
     intro y h
     simp only [interp_raw_zero] at h
-    exact (interpraw_eq_zero_eq_zero y h.symm).symm ▸ equiv_refl
+    exact (interp_raw_eq_zero_eq_zero y h.symm).symm ▸ equiv_refl
   | h_brak xs ih =>
     intro y h
     cases y with
     | zero =>
       simp only [interp_raw_zero] at h
-      exact (interpraw_eq_zero_eq_zero (brak xs) h).symm ▸ equiv_refl
+      exact (interp_raw_eq_zero_eq_zero (brak xs) h).symm ▸ equiv_refl
     | brak ys =>
       have h_factors : ∀ i, interp_raw (get xs i) = interp_raw (get ys i) := by
         intro i
@@ -168,7 +173,7 @@ theorem interp_inj {x y : RawProd} : interp_raw x = interp_raw y → x.equiv y :
           specialize h_factors i
           simp only [get, List.getD_eq_getElem?_getD, hi, not_false_eq_true, getElem?_neg, Option.getD_none] at h_factors ⊢
           rw [interp_raw_zero] at h_factors
-          have y_is_zero := interpraw_eq_zero_eq_zero _ (h_factors).symm
+          have y_is_zero := interp_raw_eq_zero_eq_zero _ (h_factors).symm
           rw [y_is_zero]
           exact equiv_refl
 
