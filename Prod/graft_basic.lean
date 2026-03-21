@@ -171,7 +171,7 @@ def graft (x y : QProd) : QProd :=
 infixl:70 " ⊔ " => graft
 
 /-- Core computation rule: graft reduces to mk on representatives. -/
--- lemma graft_mk_mk (x y : RawProd) : (mk x) ⊔ (mk y) = mk (x ⊔ y) := rfl
+lemma graft_mk_mk (x y : RawProd) : (mk x) ⊔ (mk y) = mk (x ⊔ y) := rfl
 
 theorem graft_idem : ∀ x : QProd, x ⊔ x = x :=
   by apply lift_eq₁ graft_raw_idem

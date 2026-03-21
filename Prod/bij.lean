@@ -8,88 +8,7 @@ import Mathlib.NumberTheory.PrimeCounting
 
 namespace RawProd
 
-/-! ### Helper Lemmas: The Bridge between Lists and Primes -/
-
-
-def get (xs : List RawProd) (i : ℕ) : RawProd :=
-  xs.getD i zero
-
-@[simp]
-lemma get_nil {i : ℕ} : get [] i = zero := by
-  simp only [get, List.getD_eq_getElem?_getD, List.length_nil, not_lt_zero', not_false_eq_true,
-    getElem?_neg, Option.getD_none]
-
-@[simp]
-lemma get_cons_zero {x : RawProd} {xs : List RawProd} : get (x :: xs) 0 = x := by
-  simp [get]
-
-@[simp]
-lemma get_cons_succ {x : RawProd} {xs : List RawProd} {i : ℕ} : get (x :: xs) (i + 1) = get xs i := by
-  simp only [get, List.getD_eq_getElem?_getD, List.getElem?_cons_succ]
-
-
-lemma factorization_add {p n m : ℕ }: (n.factorization + m.factorization) p  = n.factorization p + m.factorization p := by
-  simp only [Nat.factorization, Finsupp.coe_add, Finsupp.coe_mk, Pi.add_apply]
-
-
-/--
-The "Bridge Lemma":
-The exponent of the `(k + i)`-th prime in the interpretation of `xs`
-is equal to the interpretation of the `i`-th element of `xs`.
--/
-@[aesop unsafe]
-lemma factorization_interp_list {xs : List RawProd} (k i : ℕ) :
-    (interp_list xs k).factorization (Nat.nth Nat.Prime (k + i)) = interp_raw (get xs i) := by
-
-  induction xs generalizing k i with
-  | nil =>
-    simp only [interp_raw_nil, get_nil, interp_raw_zero]
-    rw [Nat.factorization_one]
-    rfl
-  | cons x xs ih =>
-    simp only [interp_list, get]
-    -- Split into head (i=0) and tail (i>0) cases
-    cases i with
-    | zero =>
-
-      simp only [add_zero, List.getD_eq_getElem?_getD, List.length_cons, lt_add_iff_pos_left,
-        add_pos_iff, zero_lt_one, or_true, getElem?_pos, List.getElem_cons_zero, Option.getD_some]
-      rw [Nat.factorization_mul, Nat.factorization_pow]--Nat.prime_nth_prime, Finsupp.single_eq_same]
-      simp only [Nat.prime_nth_prime, Nat.Prime.factorization, Finsupp.smul_single, smul_eq_mul, mul_one, Finsupp.coe_add, Pi.add_apply, Finsupp.single_eq_same, Nat.add_eq_left]
-      · rw [Nat.factorization_eq_zero_of_not_dvd]
-        apply interp_cons_coprime
-        exact Nat.lt_succ_self k
-
-      · apply pow_ne_zero; apply Nat.Prime.ne_zero; apply Nat.prime_nth_prime
-      · apply ne_of_gt; apply interp_list_gt_zero
-    | succ j =>
-      simp only [List.getD_eq_getElem?_getD, List.getElem?_cons_succ] --[Nat.add_succ, Option.getD, cons_succ]
-      rw [Nat.add_comm j 1, ←Nat.add_assoc]
-      rw [Nat.factorization_mul]
-      -- The head part (p_k ^ ...) has 0 exponent for prime p_(k+j+1)
-      · rw [factorization_add]
-
-        have hz : (Nat.nth Nat.Prime k ^ x.interp_raw).factorization (Nat.nth Nat.Prime (k + 1 + j)) = 0 := by
-          rw [Nat.factorization_pow]
-          simp only [Nat.prime_nth_prime, Nat.Prime.factorization, Finsupp.smul_single, smul_eq_mul, mul_one, Finsupp.single_apply, ite_eq_right_iff]
-          intro h
-          absurd h
-          apply primes_distinct -- only remaining sorry
-          linarith
-        rw [hz, zero_add]
-        specialize ih (k + 1) j
-        simp only [get, List.getD_eq_getElem?_getD] at ih
-        exact ih
-      . apply pow_ne_zero; apply Nat.Prime.ne_zero; apply Nat.prime_nth_prime
-      . apply ne_of_gt; apply interp_list_gt_zero
-
-
-/-- k=0 specialisation of the Bridge Lemma: the exponent of the i-th prime in `interp_list xs 0`
-    equals `interp_raw (get xs i)`. -/
-lemma factorization_interp_list_zero {xs : List RawProd} (i : ℕ) :
-    (interp_list xs 0).factorization (Nat.nth Nat.Prime i) = interp_raw (get xs i) := by
-  have h := factorization_interp_list (xs := xs) 0 i; simp only [Nat.zero_add] at h; exact h
-
+/-! ### Injectivity -/
 
 lemma brak_equiv_elementwise {xs ys : List RawProd}
     (h : ∀ i, (get xs i).equiv (get ys i)) : (brak xs).equiv (brak ys) := by
@@ -161,7 +80,6 @@ theorem interp_inj {x y : RawProd} : interp_raw x = interp_raw y → x.equiv y :
       apply brak_equiv_elementwise
 
       intro i
-      let x_i := get xs i
       if hi : i < xs.length then
           simp only [get, List.getD_eq_getElem?_getD, hi, getElem?_pos, Option.getD_some] at h_factors ⊢
           apply ih (xs.get ⟨i, hi⟩) _
@@ -191,7 +109,7 @@ theorem interp_fromNat (n : ℕ) : interp_raw (fromNat n) = n := by
     | (m+2) =>
 
       apply Nat.eq_of_factorization_eq
-      . simp only [fromNat, Nat.succ_eq_add_one, interp_raw, ne_eq, zero_lt_iff.mp (interp_list_gt_zero _), not_false_eq_true]
+      . simp only [fromNat, Nat.succ_eq_add_one, interp_raw, ne_eq, interp_list_neq_zero, not_false_eq_true]
       . simp only [ne_eq, Nat.add_eq_zero_iff, OfNat.ofNat_ne_zero, and_false, not_false_eq_true]
       . intro p
 
@@ -228,10 +146,6 @@ theorem interp_fromNat (n : ℕ) : interp_raw (fromNat n) = n := by
           rw [Nat.factorization_eq_zero_of_not_prime _ hp]
 
 
-
--- theorem interp_surj {n : ℕ }: ∃ x : RawProd, interp_raw x = n := by
---   use fromNat n
---   exact interp_fromNat n
 
 end RawProd
 

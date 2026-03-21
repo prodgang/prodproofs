@@ -10,7 +10,6 @@ inductive RawProd where
 
 namespace RawProd
 
--- the most basic lemmas
 @[simp]
 lemma zero_neq_brak {xs : List RawProd} : zero ≠ brak xs := by simp only [ne_eq, reduceCtorEq, not_false_eq_true]
 
@@ -18,86 +17,31 @@ lemma zero_neq_brak {xs : List RawProd} : zero ≠ brak xs := by simp only [ne_e
 lemma brak_neq_zero {xs : List RawProd} : brak xs ≠ zero := by simp only [ne_eq, reduceCtorEq, not_false_eq_true]
 
 
-variable {P : RawProd → Prop}
+-- Decidable equality via mutual structural recursion; BEq and LawfulBEq synthesize automatically.
+mutual
+  def decEqRaw : (a b : RawProd) → Decidable (a = b)
+    | .zero,    .zero   => isTrue rfl
+    | .zero,    .brak _ => isFalse (by simp)
+    | .brak _,  .zero   => isFalse (by simp)
+    | .brak xs, .brak ys =>
+      match decEqList xs ys with
+      | isTrue h  => isTrue (congrArg RawProd.brak h)
+      | isFalse h => isFalse (by simp [h])
 
-/-- Decidable equality for RawProd -/
-def beq : RawProd → RawProd → Bool
-  | zero, zero => true
-  | brak xs, brak ys => beqList xs ys
-  | _, _ => false
-where
-  beqList : List RawProd → List RawProd → Bool
-    | [], [] => true
-    | x::xs, y::ys => beq x y && beqList xs ys
-    | _, _ => false
+  def decEqList : (as bs : List RawProd) → Decidable (as = bs)
+    | [],    []    => isTrue rfl
+    | [],    _::_  => isFalse (by simp)
+    | _::_,  []    => isFalse (by simp)
+    | a::as, b::bs =>
+      match decEqRaw a b with
+      | isFalse h => isFalse (by simp [h])
+      | isTrue ha =>
+        match decEqList as bs with
+        | isTrue hbs => isTrue (by rw [ha, hbs])
+        | isFalse h  => isFalse (by simp [h])
+end
 
-instance : BEq RawProd where
-  beq := beq
-
-
-theorem beq_eq : ∀ (a b : RawProd), beq a b = true → a = b := by
-  intro a b
-  match a, b with
-  | zero, zero => intro _; rfl
-  | zero, brak _ => intro h; simp only [beq, Bool.false_eq_true] at h
-  | brak _, zero => intro h; simp only [beq, Bool.false_eq_true] at h
-  | brak xs, brak ys =>
-    intro h
-    simp only [beq] at h
-    congr
-    exact beqList_eq xs ys h
-where
-  beqList_eq : ∀ (xs ys : List RawProd), beq.beqList xs ys = true → xs = ys := by
-    intro xs ys
-    match xs, ys with
-    | [], [] => intro _; rfl
-    | [], _::_ => intro h; simp only [beq.beqList, Bool.false_eq_true] at h
-    | _::_, [] => intro h; simp only [beq.beqList, Bool.false_eq_true] at h
-    | x::xs, y::ys =>
-      intro h
-      simp only [beq.beqList, Bool.and_eq_true] at h
-      obtain ⟨h1, h2⟩ := h
-      congr
-      · exact beq_eq x y h1
-      · exact beqList_eq xs ys h2
-
-theorem eq_beq : ∀ (a b : RawProd), a = b → beq a b = true := by
-  intro a b heq
-  rw [heq]
-  match b with
-  | zero => rfl
-  | brak xs =>
-    simp only [beq]
-    exact eqList_beq xs
-where
-  eqList_beq : ∀ (xs : List RawProd), beq.beqList xs xs = true := by
-    intro xs
-    match xs with
-    | [] => rfl
-    | x::xs =>
-      simp only [beq.beqList, Bool.and_eq_true]
-      exact ⟨eq_beq x x rfl, eqList_beq xs⟩
-
-instance : DecidableEq RawProd := fun a b =>
-  if h : beq a b then
-    isTrue (beq_eq a b h)
-  else
-    isFalse (fun heq => h (eq_beq a b heq))
-
-lemma beq_rfl : ∀ x : RawProd, (beq x x) = true := by
-  simp only [eq_beq, implies_true]
-
-
-instance : LawfulBEq RawProd where
-  rfl := @beq_rfl
-  eq_of_beq := @beq_eq
-
-/-- size measure used for termination. -/
-def size : RawProd → Nat
-| RawProd.zero => 0
-| RawProd.brak xs => 1 + xs.foldl (fun acc r => acc + size r) 0
-
-
+instance : DecidableEq RawProd := decEqRaw
 
 /-- Induction principle for RawProd first -/
 theorem induction {P : RawProd → Prop}
@@ -123,22 +67,6 @@ theorem induction_list {P : RawProd → Prop}
         apply h_cons
         . apply ih; exact List.mem_cons_self
         . apply ihxs; intro x hx; apply ih; exact (List.mem_cons_of_mem xh hx)
-
--- theorem induction_reverse {P : RawProd → Prop}
---     (h_zero : P zero)
---     (h_nil : P (brak []))
---     (h_append : ∀ xs x, P x → P (brak xs) → P (brak (xs ++ [x])))
---     : ∀ x, P x := by
---     intro x
---     induction x using induction with
---     | h_zero => exact h_zero
---     | h_brak xs ih =>
---       induction xs using List.reverseRecOn with
---       | nil => exact h_nil
---       | append_singleton xs xt ihxs =>
---         apply h_append
---         . apply ih; simp only [List.mem_append, List.mem_cons, List.not_mem_nil, or_false, or_true]
---         . apply ihxs; intro x hx; apply ih; exact List.mem_append_left [xt] hx
 
 
 theorem induction₂

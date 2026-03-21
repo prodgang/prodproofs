@@ -33,13 +33,6 @@ lemma interp_raw_nil {i : ℕ } : interp_list [] i = 1 := by
   simp only [interp_list]
 
 
--- lemma interp_list_cons {x : RawProd} {xs : List RawProd} {i : ℕ } : interp_list (x::xs) i = Nat.nth  * interp_list xs (i+1) := by
---   simp only [interp_list, mul_one]
-
--- lemma prime_gt_one {p : ℕ } (hp : Nat.Prime p) : 1 < p := by
---   sorry
-
-
 lemma interp_cons_coprime {xs : List RawProd } {i j: ℕ } (hlt : i < j) : ¬  (Nat.nth Nat.Prime i) ∣ interp_list xs j := by
   induction xs generalizing i j with
   | nil =>
@@ -155,21 +148,12 @@ theorem equiv_interp_eq {x y : RawProd }: equiv x y → interp_raw x = interp_ra
 
 
 
-lemma interp_list_singleton (x : RawProd) (i : ℕ ) : 0 < interp_list [x] i := by
-  simp [interp_list]
-  have hnope : 0 < Nat.nth Nat.Prime i := by simp [Nat.prime_nth_prime, Nat.Prime.pos]
-  simp_all only [pow_pos]
-
-
 lemma interp_list_neq_zero {i : ℕ} (xs : List RawProd): interp_list xs i ≠ 0 := by
   induction xs generalizing i with
   | nil => simp only [interp_list, ne_eq, one_ne_zero, not_false_eq_true]
   | cons x xs ih =>
     simp only [interp_list]
     exact mul_ne_zero (pow_ne_zero _ (Nat.prime_nth_prime i).pos.ne') ih
-
-lemma interp_list_gt_zero {i : ℕ} (xs : List RawProd): 0 < interp_list xs i :=
-  Nat.pos_of_ne_zero (interp_list_neq_zero xs)
 
 
 
@@ -181,15 +165,76 @@ lemma interp_raw_eq_zero_eq_zero (x : RawProd) (hz : RawProd.interp_raw x = 0) :
 
 
 
+/-! ## Bridge Lemma: connecting interp_list to prime factorizations -/
+
+/-- Access the i-th element of a list, defaulting to zero. -/
+def get (xs : List RawProd) (i : ℕ) : RawProd := xs.getD i zero
+
+@[simp] lemma get_nil {i : ℕ} : get [] i = zero := by
+  simp only [get, List.getD_eq_getElem?_getD, List.length_nil, not_lt_zero', not_false_eq_true,
+    getElem?_neg, Option.getD_none]
+
+@[simp] lemma get_cons_zero {x : RawProd} {xs : List RawProd} : get (x :: xs) 0 = x := by
+  simp [get]
+
+@[simp] lemma get_cons_succ {x : RawProd} {xs : List RawProd} {i : ℕ} : get (x :: xs) (i + 1) = get xs i := by
+  simp only [get, List.getD_eq_getElem?_getD, List.getElem?_cons_succ]
+
+lemma factorization_add {p n m : ℕ} : (n.factorization + m.factorization) p = n.factorization p + m.factorization p := by
+  simp only [Nat.factorization, Finsupp.coe_add, Finsupp.coe_mk, Pi.add_apply]
+
+/--
+The "Bridge Lemma":
+The exponent of the `(k + i)`-th prime in the interpretation of `xs`
+is equal to the interpretation of the `i`-th element of `xs`.
+-/
+@[aesop unsafe]
+lemma factorization_interp_list {xs : List RawProd} (k i : ℕ) :
+    (interp_list xs k).factorization (Nat.nth Nat.Prime (k + i)) = interp_raw (get xs i) := by
+  induction xs generalizing k i with
+  | nil =>
+    simp only [interp_raw_nil, get_nil, interp_raw_zero]
+    rw [Nat.factorization_one]; rfl
+  | cons x xs ih =>
+    simp only [interp_list, get]
+    cases i with
+    | zero =>
+      simp only [add_zero, List.getD_eq_getElem?_getD, List.length_cons, lt_add_iff_pos_left,
+        add_pos_iff, zero_lt_one, or_true, getElem?_pos, List.getElem_cons_zero, Option.getD_some]
+      rw [Nat.factorization_mul, Nat.factorization_pow]
+      simp only [Nat.prime_nth_prime, Nat.Prime.factorization, Finsupp.smul_single, smul_eq_mul, mul_one, Finsupp.coe_add, Pi.add_apply, Finsupp.single_eq_same, Nat.add_eq_left]
+      · rw [Nat.factorization_eq_zero_of_not_dvd]
+        apply interp_cons_coprime
+        exact Nat.lt_succ_self k
+      · apply pow_ne_zero; apply Nat.Prime.ne_zero; apply Nat.prime_nth_prime
+      · exact interp_list_neq_zero _
+    | succ j =>
+      simp only [List.getD_eq_getElem?_getD, List.getElem?_cons_succ]
+      rw [Nat.add_comm j 1, ←Nat.add_assoc]
+      rw [Nat.factorization_mul]
+      · rw [factorization_add]
+        have hz : (Nat.nth Nat.Prime k ^ x.interp_raw).factorization (Nat.nth Nat.Prime (k + 1 + j)) = 0 := by
+          rw [Nat.factorization_pow]
+          simp only [Nat.prime_nth_prime, Nat.Prime.factorization, Finsupp.smul_single, smul_eq_mul, mul_one, Finsupp.single_apply, ite_eq_right_iff]
+          intro h; absurd h; apply primes_distinct; linarith
+        rw [hz, zero_add]
+        specialize ih (k + 1) j
+        simp only [get, List.getD_eq_getElem?_getD] at ih
+        exact ih
+      . apply pow_ne_zero; apply Nat.Prime.ne_zero; apply Nat.prime_nth_prime
+      . exact interp_list_neq_zero _
+
+/-- k=0 specialisation of the Bridge Lemma. -/
+lemma factorization_interp_list_zero {xs : List RawProd} (i : ℕ) :
+    (interp_list xs 0).factorization (Nat.nth Nat.Prime i) = interp_raw (get xs i) := by
+  have h := factorization_interp_list (xs := xs) 0 i; simp only [Nat.zero_add] at h; exact h
+
+
 noncomputable def fromNat : Nat → RawProd
   | 0 => zero
   | 1 => brak []
   | n@(Nat.succ _) =>
-      -- Get the list of prime factors and determine the maximum prime factor
-      -- let factor_map := Nat.primeFactorsList n
-      -- let max_prime := factor_map.foldl (fun acc p => max acc p) 2
-      -- let max_index := (factor_map.idxOf max_prime) + 1
-      let max_index := n -- crazy crude bound
+      let max_index := n -- crude but valid upper bound: p_i > i, so factorization is zero past index n
 
       have n_neq_0: n ≠ 0 := by grind only
 
@@ -227,25 +272,6 @@ noncomputable def fromNat (n : ℕ ) := mk (RawProd.fromNat n)
   simp only [interp, ofList, List.map_nil]
   apply Quotient.lift_mk
 
-
-
--- @[simp]
--- lemma interp_eq_zero_eq_zero (x : QProd) (hz : interp x = 0) : x = zero := by
---   -- apply Quotient.in
---   -- intro r
---   -- have : RawProd.interp_raw r = 0 := by
---   --   simp [interp, Quotient.liftOn] at hz
---   --   exact hz
---   -- rw [RawProd.raw_interp_eq_zero_eq_zero r this]
---   -- --apply Quotient.sound
---   -- --apply RawProd.equiv.refl
---   -- simp only [RawProd.interp_zero, brak_eq_mk]
---   apply Quot.recOn
---   . sorry
---   . sorry
-
-  -- shouldnt be so hard!!
-  -- probably need better mechanics for lifting to quotient
 
 
 lemma fromNat_zero : fromNat 0 = zero := by
