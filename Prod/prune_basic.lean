@@ -71,19 +71,19 @@ lemma cons_prune_cons {xs ys : List RawProd} {x y : RawProd} : (brak (x::xs)) �
   simp only [prune_raw, prune_list]
 
 
-lemma prune_list_allzero_left {xs ys : List RawProd} (haz : allzero xs) :
-    prune_list xs ys = List.replicate (min xs.length ys.length) zero := by
-  induction xs generalizing ys with
-  | nil => simp [prune_list]
-  | cons x xs ih =>
-    obtain ⟨hxz, hxsaz⟩ := allzero_cons haz
-    subst hxz
-    cases ys with
-    | nil => simp only [prune_list, List.length_cons, List.length_nil, Nat.le_add_left, Nat.min_eq_right, List.replicate_zero]
-    | cons y ys =>
-      simp only [prune_list, zero_prune_eq_zero, List.length_cons]
-      have hmin : min (xs.length + 1) (ys.length + 1) = min xs.length ys.length + 1 := by omega
-      rw [hmin, List.replicate_succ, ih hxsaz]
+-- lemma prune_list_allzero_left {xs ys : List RawProd} (haz : allzero xs) :
+--     prune_list xs ys = List.replicate (min xs.length ys.length) zero := by
+--   induction xs generalizing ys with
+--   | nil => simp [prune_list]
+--   | cons x xs ih =>
+--     obtain ⟨hxz, hxsaz⟩ := allzero_cons haz
+--     subst hxz
+--     cases ys with
+--     | nil => simp only [prune_list, List.length_cons, List.length_nil, Nat.le_add_left, Nat.min_eq_right, List.replicate_zero]
+--     | cons y ys =>
+--       simp only [prune_list, zero_prune_eq_zero, List.length_cons]
+--       have hmin : min (xs.length + 1) (ys.length + 1) = min xs.length ys.length + 1 := by omega
+--       rw [hmin, List.replicate_succ, ih hxsaz]
 
 lemma allzero_prune_eq_allzero {xs ys : List RawProd} (haz : allzero xs) :
     ((brak xs) ⊓ (brak ys)) = brak (List.replicate (min xs.length ys.length) zero) := by
@@ -190,10 +190,10 @@ infixl:70 " ⊓ " => prune
 lemma prune_mk_mk (x y : RawProd) : (mk x) ⊓ (mk y) = mk (x ⊓ y) := rfl
 
 /-- basic simplification: prune zero zero = zero -/
-lemma zero_prune_zero_eq_zero : zero ⊓ zero = zero := by
-  change prune (mk RawProd.zero) (mk RawProd.zero) = mk RawProd.zero
-  rw [prune_mk_mk]
-  simp only [prune_zero_eq_zero, mk_zero_eq_zero]
+-- lemma zero_prune_zero_eq_zero : zero ⊓ zero = zero := by
+--   change prune (mk RawProd.zero) (mk RawProd.zero) = mk RawProd.zero
+--   rw [prune_mk_mk]
+--   simp only [prune_zero_eq_zero, mk_zero_eq_zero]
 
 
 

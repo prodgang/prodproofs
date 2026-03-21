@@ -43,7 +43,7 @@ lemma factorization_interp_list {xs : List RawProd} (k i : ℕ) :
 
   induction xs generalizing k i with
   | nil =>
-    simp only [interp_nil, get_nil, interp_zero]
+    simp only [interp_raw_nil, get_nil, interp_raw_zero]
     rw [Nat.factorization_one]
     rfl
   | cons x xs ih =>
@@ -136,13 +136,13 @@ theorem interp_inj {x y : RawProd} : interp_raw x = interp_raw y → x.equiv y :
   induction x using induction with
   | h_zero =>
     intro y h
-    simp only [interp_zero] at h
+    simp only [interp_raw_zero] at h
     exact (interpraw_eq_zero_eq_zero y h.symm).symm ▸ equiv_refl
   | h_brak xs ih =>
     intro y h
     cases y with
     | zero =>
-      simp only [interp_zero] at h
+      simp only [interp_raw_zero] at h
       exact (interpraw_eq_zero_eq_zero (brak xs) h).symm ▸ equiv_refl
     | brak ys =>
       have h_factors : ∀ i, interp_raw (get xs i) = interp_raw (get ys i) := by
@@ -167,7 +167,7 @@ theorem interp_inj {x y : RawProd} : interp_raw x = interp_raw y → x.equiv y :
       else
           specialize h_factors i
           simp only [get, List.getD_eq_getElem?_getD, hi, not_false_eq_true, getElem?_neg, Option.getD_none] at h_factors ⊢
-          rw [interp_zero] at h_factors
+          rw [interp_raw_zero] at h_factors
           have y_is_zero := interpraw_eq_zero_eq_zero _ (h_factors).symm
           rw [y_is_zero]
           exact equiv_refl
@@ -182,11 +182,11 @@ theorem interp_fromNat (n : ℕ) : interp_raw (fromNat n) = n := by
   | h n ih =>
     match n with
     | 0 => simp only [fromNat, interp_raw]
-    | 1 => simp only [fromNat, interp_raw, interp_nil]
+    | 1 => simp only [fromNat, interp_raw, interp_raw_nil]
     | (m+2) =>
 
       apply Nat.eq_of_factorization_eq
-      . simp only [fromNat, Nat.succ_eq_add_one, interp_raw, ne_eq, zero_lt_iff.mp interp_list_gt_zero, not_false_eq_true]
+      . simp only [fromNat, Nat.succ_eq_add_one, interp_raw, ne_eq, zero_lt_iff.mp (interp_list_gt_zero _), not_false_eq_true]
       . simp only [ne_eq, Nat.add_eq_zero_iff, OfNat.ofNat_ne_zero, and_false, not_false_eq_true]
       . intro p
 
@@ -224,9 +224,9 @@ theorem interp_fromNat (n : ℕ) : interp_raw (fromNat n) = n := by
 
 
 
-theorem interp_surj {n : ℕ }: ∃ x : RawProd, interp_raw x = n := by
-  use fromNat n
-  exact interp_fromNat n
+-- theorem interp_surj {n : ℕ }: ∃ x : RawProd, interp_raw x = n := by
+--   use fromNat n
+--   exact interp_fromNat n
 
 end RawProd
 

@@ -28,8 +28,8 @@ lemma trim_append_brak_eq_self (xs ys: List RawProd): trim ( xs ++  [brak ys]) =
   simp only [trim, beq_iff_eq, reduceCtorEq, not_false_eq_true, List.rdropWhile_concat_neg]
 
 
-lemma trim_idem (xs : List RawProd) : trim (trim xs) = trim xs := by
-  apply List.rdropWhile_idempotent
+-- lemma trim_idem (xs : List RawProd) : trim (trim xs) = trim xs := by
+--   apply List.rdropWhile_idempotent
 
 
 lemma trim_replicate_zero_eq_nil {n : ℕ } : trim (List.replicate n zero) = [] := by
@@ -49,27 +49,17 @@ lemma trim_append_zero (xs : List RawProd) : trim (xs ++ [zero]) = trim xs := by
     apply List.rdropWhile_concat_pos (. == zero) (y::ys) zero
     rfl
 
-lemma trim_length_leq (xs : List RawProd) : (trim xs).length ≤ xs.length := by
-  simp [trim, List.rdropWhile]
-  have h : (List.dropWhile (fun x ↦ x == zero) xs.reverse).length ≤ xs.reverse.length := by apply List.length_dropWhile_le (. == zero) xs.reverse
-  have h2 : xs.length = xs.reverse.length := by simp only [List.length_reverse]
-  rw [h2]
-  exact h
-
-
-lemma trim_brak_eq_brak (xs : List RawProd) : trim [brak xs] = [brak xs] := by
-  rfl
+-- lemma trim_length_leq (xs : List RawProd) : (trim xs).length ≤ xs.length := by
+--   simp [trim, List.rdropWhile]
+--   have h : (List.dropWhile (fun x ↦ x == zero) xs.reverse).length ≤ xs.reverse.length := by apply List.length_dropWhile_le (. == zero) xs.reverse
+--   have h2 : xs.length = xs.reverse.length := by simp only [List.length_reverse]
+--   rw [h2]
+--   exact h
 
 
 lemma trim_append_brak_neq_nil (xs ys : List RawProd) : trim (xs ++ [brak ys]) ≠ [] := by
   simp only [trim, beq_iff_eq, reduceCtorEq, not_false_eq_true, List.rdropWhile_concat_neg, ne_eq,
     List.append_eq_nil_iff, List.cons_ne_self, and_false]
-
-
-
-
-
-
 
 
 /- normalize -/
@@ -81,6 +71,7 @@ def normalize : RawProd → RawProd
 
 lemma normalize_zero_eq_zero : normalize zero = zero := by simp only [normalize]
 
+@[simp]
 lemma normalize_nil_eq_nil : normalize (brak []) = (brak []) := by simp only [normalize, List.map_nil, trim_nil_eq_nil]
 
 lemma normalize_brak_neq_zero (xs : List RawProd) : normalize (brak xs) ≠ zero := by simp only [normalize, ne_eq, reduceCtorEq, not_false_eq_true]
@@ -142,11 +133,11 @@ instance : Setoid RawProd where
 
 
 
- lemma not_brak_equiv_zero (xs : List RawProd) : ¬ (brak xs).equiv zero := by
-  simp only [equiv, normalize_zero_eq_zero, normalize_brak_neq_zero, not_false_eq_true]
+--  lemma not_brak_equiv_zero (xs : List RawProd) : ¬ (brak xs).equiv zero := by
+--   simp only [equiv, normalize_zero_eq_zero, normalize_brak_neq_zero, not_false_eq_true]
 
- lemma not_zero_equiv_brak (xs : List RawProd) : ¬ zero.equiv (brak xs) := by
-  simp only [equiv, normalize_zero_eq_zero, normalize, reduceCtorEq, not_false_eq_true]
+--  lemma not_zero_equiv_brak (xs : List RawProd) : ¬ zero.equiv (brak xs) := by
+--   simp only [equiv, normalize_zero_eq_zero, normalize, reduceCtorEq, not_false_eq_true]
 
 
 @[simp]
@@ -193,7 +184,7 @@ instance decidable_allzero (xs : List RawProd) [DecidableEq RawProd] :
   infer_instance
 
 
-lemma allzero_nil : allzero [] := by simp only [allzero, List.length_nil, List.replicate_zero]
+-- lemma allzero_nil : allzero [] := by simp only [allzero, List.length_nil, List.replicate_zero]
 
 /-alternative definition-/
 lemma allzero_iff {xs : List RawProd} : allzero xs ↔ ∀ x ∈ xs, x = zero := by

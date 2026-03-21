@@ -24,11 +24,12 @@ noncomputable def interp_list : List RawProd → ℕ → ℕ
 end
 
 
-lemma interp_zero : interp_raw zero = 0 := by
+@[simp]
+lemma interp_raw_zero : interp_raw zero = 0 := by
   simp only [interp_raw]
 
 
-lemma interp_nil {i : ℕ } : interp_list [] i = 1 := by
+lemma interp_raw_nil {i : ℕ } : interp_list [] i = 1 := by
   simp only [interp_list]
 
 
@@ -42,7 +43,7 @@ lemma interp_nil {i : ℕ } : interp_list [] i = 1 := by
 lemma interp_cons_coprime {xs : List RawProd } {i j: ℕ } (hlt : i < j) : ¬  (Nat.nth Nat.Prime i) ∣ interp_list xs j := by
   induction xs generalizing i j with
   | nil =>
-    simp only [interp_nil]
+    simp only [interp_raw_nil]
     apply Nat.Prime.not_dvd_one
     exact (Nat.prime_nth_prime i)
   | cons x xs ih =>
@@ -117,31 +118,23 @@ lemma interp_eq_interp_trim (xs : List RawProd) :
   simp only [interp_raw]
   exact interp_list_eq_interp_list_trim
 
-@[aesop safe]
-lemma interp_eq_norm_interp {x : RawProd} :  interp_raw (normalize x) = interp_raw x := by
-  induction x using RawProd.induction with
-  | h_zero => simp only [normalize_zero_eq_zero]
-  | h_brak xs ih =>
-    simp_all [normalize, interp_raw]
-    sorry
-    --exact interp_list_eq_interp_list_trim xs 0
-    -- cant close, skipping for now
---      ∀ x ∈ xs, x.normalize.interp_raw = x.interp_raw
--- ⊢ interp_list (trim (List.map normalize xs)) 0 = interp_list xs 0
+mutual
+lemma interp_eq_norm_interp : ∀ (x : RawProd), interp_raw (normalize x) = interp_raw x
+  | zero => by simp [normalize]
+  | brak xs => by
+      simp only [normalize, interp_raw]
+      rw [interp_list_eq_interp_list_trim]
+      exact interp_list_map_normalize xs 0
 
-
-
-
-lemma interp_list_map_normalize {xs : List RawProd} {k : ℕ} :
-    interp_list (List.map normalize xs) k = interp_list xs k := by
-  induction xs generalizing k with
-  | nil => simp only [List.map_nil, interp_list]
-  | cons x xs ih =>
-    simp only [List.map_cons, interp_list]
-    rw [interp_eq_norm_interp, ih] -- old
-    --rw [ih]
-    --simp [ih]
-    --left
+lemma interp_list_map_normalize : ∀ (xs : List RawProd) (k : ℕ),
+    interp_list (List.map normalize xs) k = interp_list xs k
+  | [], _ => by simp [interp_list]
+  | x :: xs, k => by
+      simp only [List.map_cons, interp_list]
+      rw [interp_eq_norm_interp x]
+      congr 1
+      exact interp_list_map_normalize xs (k + 1)
+end
 
 
 
@@ -168,7 +161,7 @@ lemma interp_list_singleton (x : RawProd) (i : ℕ ) : 0 < interp_list [x] i := 
   simp_all only [pow_pos]
 
 
-lemma interp_list_gt_zero {xs : List RawProd} {i : ℕ} : 0 < interp_list xs i := by
+lemma interp_list_gt_zero {i : ℕ} (xs : List RawProd): 0 < interp_list xs i := by
   induction xs generalizing i with
   | nil => simp only [interp_list, zero_lt_one]
   | cons x xs ih =>
@@ -188,7 +181,7 @@ lemma interpraw_eq_zero_eq_zero (x : RawProd) (hz : RawProd.interp_raw x = 0) : 
   | brak xs =>
     simp [interp_raw] at hz
     absurd hz
-    have hgtz : 0 < interp_list xs 0 := interp_list_gt_zero
+    have hgtz : 0 < interp_list xs 0 := interp_list_gt_zero xs
     simp_all only [lt_self_iff_false]
 
 

@@ -42,8 +42,6 @@ theorem absorption2 : ∀ x y : RawProd, x ⊓ (x ⊔ y) = x := by
     simp only [prune_raw, graft_raw, brak.injEq, graft_list, prune_list, List.cons.injEq] at hxs ⊢
     exact ⟨hx, hxs⟩
 
--- this should be enough to prove distrib lattice but lean doesnt have the equivalence :////
-
 end RawProd
 
 namespace QProd
