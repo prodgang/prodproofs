@@ -55,12 +55,14 @@ lemma pleq_head_tail_imp_pleq_cons {x y : RawProd} {xs ys : List RawProd } (h_he
   simp_all only [pleq_raw, pleq_list, and_self]
 
 
-lemma brak_pleq_nil_allzero {xs : List RawProd} (hleq: brak xs ⊑ brak []) : allzero xs := by
-  cases xs with
-  | nil => rfl
-  | cons x xs =>
-    simp only [pleq_raw, pleq_list] at hleq
-    exact hleq
+-- lemma brak_pleq_nil_allzero {xs : List RawProd} (hleq: brak xs ⊑ brak []) : allzero xs := by
+--   cases xs with
+--   | nil => rfl
+--   | cons x xs =>
+--     simp only [pleq_raw, pleq_list] at hleq
+--     exact hleq
+
+
 
 
 lemma replicate_zero_pleq_brak {n: ℕ } (xs : List RawProd): brak (List.replicate n zero) ⊑ brak xs := by
@@ -75,6 +77,18 @@ lemma replicate_zero_pleq_brak {n: ℕ } (xs : List RawProd): brak (List.replica
       simp only [List.replicate_succ, pleq_list, zero_pleq, true_and]
       exact ih ys
 
+lemma brak_pleq_nil_iff_allzero {xs : List RawProd} : brak xs ⊑ brak [] ↔ allzero xs := by
+  constructor
+  . intro hleq
+    cases xs with
+    | nil => rfl
+    | cons x xs =>
+      simp only [pleq_raw, pleq_list] at hleq
+      exact hleq
+  . intro h
+    rw [allzero] at h
+    rw [h]
+    simp only [replicate_zero_pleq_brak]
 
 
 lemma brak_pleq_replicate_zero_eq_replicate_zero {xs : List RawProd} (hpleq: ∃ n, brak xs ⊑ brak (List.replicate n zero)) : xs = List.replicate xs.length zero := by
@@ -83,7 +97,7 @@ lemma brak_pleq_replicate_zero_eq_replicate_zero {xs : List RawProd} (hpleq: ∃
   | cons x xs ihx =>
     obtain ⟨n, hn⟩ := hpleq
     induction n with
-    | zero => simp only [List.replicate_zero] at hn; exact brak_pleq_nil_allzero hn;
+    | zero => simp only [List.replicate_zero] at hn; exact brak_pleq_nil_iff_allzero.mp hn;
     | succ n ihn =>
       simp only [List.replicate_succ] at hn
       obtain ⟨hx,hxs⟩ := cons_pleq_cons_iff.mp hn
@@ -117,11 +131,11 @@ theorem pleq_raw_antisymm {x y : RawProd} (h1 : x ⊑ y) (h2 : y ⊑ x) : x.equi
   case h_zero_right => intro x hx hz; apply pleq_zero_eq_zero at hx ; simp only [equiv, normalize_zero_eq_zero, hx]
   case h_nil_left =>
     intro ys h1 h2
-    rw [brak_pleq_nil_allzero h2]
+    rw [brak_pleq_nil_iff_allzero.mp h2]
     simp only [equiv, normalize, List.map_nil, trim_nil_eq_nil, List.map_replicate, normalize_zero_eq_zero, trim_replicate_zero_eq_nil]
   case h_nil_right =>
     intro ys h1 h2
-    rw [brak_pleq_nil_allzero h1]
+    rw [brak_pleq_nil_iff_allzero.mp h1]
     simp only [equiv, normalize, List.map_nil, trim_nil_eq_nil, List.map_replicate, normalize_zero_eq_zero, trim_replicate_zero_eq_nil]
   case h_cons_cons =>
     intro x y xs ys hx hxs hleq hleq2
@@ -142,11 +156,11 @@ theorem pleq_transitivity {x y z : RawProd} (hxy : x ⊑ y) (hyz : y ⊑ z) : x 
   case h_nil_left => simp only [nil_pleq_brak, implies_true]
   case h_nil_mid =>
     intro xs zs hl1 hl2
-    rw [brak_pleq_nil_allzero hl1]
+    rw [brak_pleq_nil_iff_allzero.mp hl1]
     apply replicate_zero_pleq_brak
   case h_nil_right =>
     intro xs zs hl1 hl2
-    rw [brak_pleq_nil_allzero hl2] at hl1
+    rw [brak_pleq_nil_iff_allzero.mp hl2] at hl1
     have hxs : xs = List.replicate xs.length zero := by apply brak_pleq_replicate_zero_eq_replicate_zero; use zs.length;
     rw [hxs]
     apply replicate_zero_pleq_brak
@@ -171,7 +185,7 @@ theorem pleq_prune_raw_iff { x y : RawProd } : x ⊑ y ↔ (x ⊓ y).equiv x := 
     case h_nil_right =>
       -- use brak xs ⊑ [] to get allzero xs and then...
       intro xs hleq
-      have haz := brak_pleq_nil_allzero hleq
+      have haz := brak_pleq_nil_iff_allzero.mp hleq
       rw [brak_prune_nil_eq_nil, haz]
       simp only [equiv, normalize_nil_eq_nil, normalize, equiv_zero_eq_zero, List.map_replicate, brak.injEq, List.nil_eq]
       apply trim_eq_nil_iff.mpr
@@ -214,7 +228,7 @@ theorem pleq_dvd {x y : RawProd } (hnz: x ≠ zero) (hlq: x ⊑ y ): interp_raw 
   case h_zero_left => intros; contradiction;
   case h_zero_right => intro x hx hx2; exfalso; exact hx (pleq_zero_eq_zero hx2)
   case h_nil_left => intros; simp only [interp_raw, interp_raw_nil, isUnit_iff_eq_one, IsUnit.dvd]
-  case h_nil_right => intro xs hnz hl; have haz :=  brak_pleq_nil_allzero hl; simp only [interp_raw, interp_allzero_eq_one haz, interp_raw_nil, dvd_refl]
+  case h_nil_right => intro xs hnz hl; have haz :=  brak_pleq_nil_iff_allzero.mp hl; simp only [interp_raw, interp_allzero_eq_one haz, interp_raw_nil, dvd_refl]
   case h_cons_cons =>
     intro x y xs ys h1 h2 h3 h4
     -- turn x | y to x.factorization < y.factorization

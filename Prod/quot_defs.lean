@@ -114,8 +114,8 @@ def equiv (x y : RawProd) : Prop :=
   normalize x = normalize y
 
 
-theorem equiv_refl {x : RawProd }: equiv x x := by
-  cases x <;> simp only [equiv]
+theorem equiv_refl : ∀ x, equiv x x := by
+  intro x; cases x <;> simp only [equiv]
 
 theorem equiv_symm {x y : RawProd }: equiv x y → equiv y x := by
   intro h
@@ -197,6 +197,7 @@ lemma allzero_iff {xs : List RawProd} : allzero xs ↔ ∀ x ∈ xs, x = zero :=
     constructor
     . rfl
     . exact h
+
 
 
 lemma not_allzero_append_zero {xs : List RawProd} (hnaz: ¬ RawProd.allzero (xs ++ [zero])) : ¬ RawProd.allzero xs := by

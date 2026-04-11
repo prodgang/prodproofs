@@ -110,7 +110,7 @@ theorem graft_raw_assoc : ∀ x y z, (x ⊔ y) ⊔ z = x ⊔ (y ⊔ z):= by
 lemma allzero_graft_eq_self {xs ys : List RawProd} (haz : allzero xs) : (brak ys).equiv (brak xs ⊔ brak ys) := by
   simp only [graft_raw]
   induction xs generalizing ys with
-  | nil => simp only [graft_list]; exact equiv_refl
+  | nil => simp only [graft_list]; exact equiv_refl _
   | cons x xs ih =>
     obtain ⟨hxz, hxsaz⟩ := allzero_cons haz
     subst hxz
@@ -122,7 +122,7 @@ lemma allzero_graft_eq_self {xs ys : List RawProd} (haz : allzero xs) : (brak ys
       simp only [graft_list, zero_graft_eq_self]
       apply cons_equiv_cons_iff.mp
       constructor
-      . exact equiv_refl
+      . exact equiv_refl _
       . apply ih
         exact hxsaz
 

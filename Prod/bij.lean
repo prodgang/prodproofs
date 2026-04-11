@@ -61,13 +61,13 @@ theorem interp_inj {x y : RawProd} : interp_raw x = interp_raw y → x.equiv y :
   | h_zero =>
     intro y h
     simp only [interp_raw_zero] at h
-    exact (interp_raw_eq_zero_eq_zero y h.symm).symm ▸ equiv_refl
+    exact (interp_raw_eq_zero_eq_zero y h.symm).symm ▸ equiv_refl zero
   | h_brak xs ih =>
     intro y h
     cases y with
     | zero =>
       simp only [interp_raw_zero] at h
-      exact (interp_raw_eq_zero_eq_zero (brak xs) h).symm ▸ equiv_refl
+      exact (interp_raw_eq_zero_eq_zero (brak xs) h).symm ▸ equiv_refl zero
     | brak ys =>
       have h_factors : ∀ i, interp_raw (get xs i) = interp_raw (get ys i) := by
         intro i
@@ -93,7 +93,7 @@ theorem interp_inj {x y : RawProd} : interp_raw x = interp_raw y → x.equiv y :
           rw [interp_raw_zero] at h_factors
           have y_is_zero := interp_raw_eq_zero_eq_zero _ (h_factors).symm
           rw [y_is_zero]
-          exact equiv_refl
+          exact equiv_refl zero
 
 
 /-! ### Surjectivity -/

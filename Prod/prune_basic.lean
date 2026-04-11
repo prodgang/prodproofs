@@ -85,7 +85,7 @@ lemma cons_prune_cons {xs ys : List RawProd} {x y : RawProd} : (brak (x::xs)) �
 --       have hmin : min (xs.length + 1) (ys.length + 1) = min xs.length ys.length + 1 := by omega
 --       rw [hmin, List.replicate_succ, ih hxsaz]
 
-lemma allzero_prune_eq_allzero {xs ys : List RawProd} (haz : allzero xs) :
+lemma allzero_prune_eq_replicate {xs ys : List RawProd} (haz : allzero xs) :
     ((brak xs) ⊓ (brak ys)) = brak (List.replicate (min xs.length ys.length) zero) := by
   simp only [prune_raw]
   induction xs generalizing ys with
@@ -104,6 +104,8 @@ lemma allzero_prune_eq_allzero {xs ys : List RawProd} (haz : allzero xs) :
       simp only [brak.injEq, List.cons.injEq, true_and]
       simp only [brak.injEq] at ih
       exact ih
+
+--lemma allzero_prune_allzero {xy ys : List RawProd} (haz : allzero xs) : allzero ((brak xs) ⊓ (brak ys))
 
 theorem prune_raw_idem : ∀ x : RawProd, x ⊓ x = x := by
   intro x
@@ -144,7 +146,7 @@ theorem prune_raw_assoc : ∀ x y z : RawProd, (x ⊓ y) ⊓ z = x ⊓ (y ⊓ z)
 lemma prune_raw_trim_equiv {xs ys : List RawProd} : (brak []).equiv (brak xs) → (brak []).equiv (brak xs ⊓ brak ys) := by
   intro h1
   have haz : allzero xs := by exact nil_equiv_brak_iff_allzero.mp h1
-  simp only [allzero_prune_eq_allzero haz]
+  simp only [allzero_prune_eq_replicate haz]
   simp only [nil_equiv_brak_iff_allzero, allzero, List.length_replicate]
 
 theorem prune_raw_respects_equiv {x x' y y' : RawProd} (hx : x.equiv x') (hy : y.equiv y') : (x ⊓ y).equiv (x' ⊓ y') := by
