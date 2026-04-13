@@ -72,25 +72,6 @@ lemma himp_raw_pleq_bound (x a b : RawProd) : himp_raw x a b ⊑ x := by
                  ih (fun x hxt a b => hx x (List.mem_cons_of_mem xh hxt) a b) as.tail bs.tail⟩
 
 
-lemma pleq_raw_normalize_right (x y : RawProd) :
-    x ⊑ y ↔ x ⊑ normalize y := by
-  rw [pleq_prune_raw_iff, pleq_prune_raw_iff]
-  have h : (x ⊓ y).equiv (x ⊓ normalize y) :=
-    prune_raw_respects_equiv (equiv_refl x) (equiv_symm equiv_of_normalize)
-  constructor
-  · intro he; exact equiv_trans (equiv_symm h) he
-  · intro he; exact equiv_trans h he
-
-lemma pleq_raw_normalize_left (x y : RawProd) :
-    x ⊑ y ↔ normalize x ⊑ y := by
-  rw [pleq_prune_raw_iff, pleq_prune_raw_iff]
-  have h : (x ⊓ y).equiv (normalize x ⊓ y) :=
-    prune_raw_respects_equiv (equiv_symm equiv_of_normalize) (equiv_refl y)
-  simp only [equiv, normalize_idem] at h ⊢
-  constructor
-  · intro he; exact h.symm.trans he
-  · intro he; exact h.trans he
-
 /-- Core Heyting adjunction: `a ⊑ x → (a ⊑ himp_raw x b c ↔ a ⊓ b ⊑ c)`. -/
 lemma himp_raw_adjunction {x a b c : RawProd} (ha : a ⊑ x) :
     a ⊑ himp_raw x b c ↔ a ⊓ b ⊑ c := by
@@ -191,12 +172,7 @@ lemma pleq_iff_le {x y : QProd} : x ⊑ y ↔ x ≤ y :=
   pleq_prune_iff.trans inf_eq_left
 
 lemma zero_le (y : QProd) : QProd.zero ≤ y :=
-  pleq_iff_le.mp (by
-    show RawProd.pleq_raw (rep QProd.zero) (rep y)
-    have : rep QProd.zero = RawProd.zero := by
-      show RawProd.normalize RawProd.zero = RawProd.zero
-      exact RawProd.normalize_zero_eq_zero
-    rw [this]; exact RawProd.zero_pleq)
+  pleq_iff_le.mp (Quotient.ind (fun _ => mk_pleq_mk_iff.mpr RawProd.zero_pleq) y)
 
 @[reducible]
 def downsetSublattice (x : QProd) : Sublattice QProd where
@@ -227,33 +203,26 @@ instance (x : QProd) : BoundedOrder (Downset x) where
 
 
 
-lemma le_mk_iff {v : QProd} {y : RawProd} : v ≤ mk y ↔ RawProd.pleq_raw (rep v) y := by
+lemma le_mk_iff {v : QProd} {y : RawProd} : v ≤ mk y ↔ (rep v) ⊑ y := by
   rw [← pleq_iff_le]
-  show RawProd.pleq_raw (rep v) (rep (mk y)) ↔ RawProd.pleq_raw (rep v) y
-  exact (pleq_raw_normalize_right (rep v) y).symm
+  conv_lhs => rw [← mk_rep_eq (q := v)]
+  exact mk_pleq_mk_iff
 
 /-- `a ⊓ b ≤ c ↔ pleq_raw (rep a ⊓ rep b) (rep c)`:
     lifts raw-level `⊓` to the QProd order. -/
-lemma inf_le_iff_pleq {a b c : QProd} : prune a b ≤ c ↔ RawProd.pleq_raw (rep a ⊓ rep b) (rep c) := by
-  have prune_eq : prune a b = mk (rep a ⊓ rep b) := by
-    conv_lhs => rw [← mk_rep_eq (q := a), ← mk_rep_eq (q := b)]
-    exact prune_mk_mk (rep a) (rep b)
-  rw [prune_eq, ← pleq_iff_le]
-  exact (pleq_raw_normalize_left _ _).symm
+lemma inf_le_iff_pleq {a b c : QProd} : prune a b ≤ c ↔ (rep a ⊓ rep b) ⊑ (rep c) := by
+  conv_lhs => rw [← mk_rep_eq (q := a), ← mk_rep_eq (q := b), prune_mk_mk, ← mk_rep_eq (q := c)]
+  exact pleq_iff_le.symm.trans mk_pleq_mk_iff
 
-/-- Heyting implication in `Downset x`: greatest `c ⊑ x` satisfying `a ⊓ c ⊑ b`. -/
+/-- Restricts `himp_raw` to the subtype `Downset x`-/
 def himp_Downset (x : QProd) (a b : Downset x) : Downset x :=
   ⟨mk (RawProd.himp_raw (rep x) (rep a.1) (rep b.1)),
    pleq_iff_downset.mp (pleq_iff_le.mp (by
-     show RawProd.pleq_raw (rep (mk (RawProd.himp_raw (rep x) (rep a.1) (rep b.1)))) (rep x)
-     exact (pleq_raw_normalize_left _ _).mp (himp_raw_pleq_bound (rep x) (rep a.1) (rep b.1))))⟩
+     have h := mk_pleq_mk_iff.mpr (himp_raw_pleq_bound (rep x) (rep a.1) (rep b.1))
+     rwa [mk_rep_eq] at h))⟩
 
 instance (x : QProd) : HeytingAlgebra (Downset x) :=
-  HeytingAlgebra.ofHImp (himp_Downset x) (fun a b c => by
-    constructor
-    · intro h
-      exact inf_le_iff_pleq.mpr ((himp_raw_adjunction (pleq_iff_le.mpr a.2)).mp (le_mk_iff.mp h))
-    · intro h
-      exact le_mk_iff.mpr ((himp_raw_adjunction (pleq_iff_le.mpr a.2)).mpr (inf_le_iff_pleq.mp h)))
+  HeytingAlgebra.ofHImp (himp_Downset x) fun a _ _ =>
+    le_mk_iff.trans ((himp_raw_adjunction (pleq_iff_le.mpr a.2)).trans inf_le_iff_pleq.symm)
 
 end QProd

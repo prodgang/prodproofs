@@ -222,6 +222,26 @@ theorem pleq_prune_raw_iff { x y : RawProd } : x ⊑ y ↔ (x ⊓ y).equiv x := 
       exact ⟨hh hl, ht hr⟩
 
 
+lemma pleq_raw_normalize_right (x y : RawProd) :
+    x ⊑ y ↔ x ⊑ normalize y := by
+  rw [pleq_prune_raw_iff, pleq_prune_raw_iff]
+  have h : (x ⊓ y).equiv (x ⊓ normalize y) :=
+    prune_raw_respects_equiv (equiv_refl x) (equiv_symm equiv_of_normalize)
+  constructor
+  · intro he; exact equiv_trans (equiv_symm h) he
+  · intro he; exact equiv_trans h he
+
+lemma pleq_raw_normalize_left (x y : RawProd) :
+    x ⊑ y ↔ normalize x ⊑ y := by
+  rw [pleq_prune_raw_iff, pleq_prune_raw_iff]
+  have h : (x ⊓ y).equiv (normalize x ⊓ y) :=
+    prune_raw_respects_equiv (equiv_symm equiv_of_normalize) (equiv_refl y)
+  simp only [equiv, normalize_idem] at h ⊢
+  constructor
+  · intro he; exact h.symm.trans he
+  · intro he; exact h.trans he
+
+
 theorem pleq_dvd {x y : RawProd } (hnz: x ≠ zero) (hlq: x ⊑ y ): interp_raw x ∣ interp_raw y := by
   revert x y
   apply induction_list₂
@@ -304,6 +324,34 @@ theorem pleq_transitivity (x y z : QProd) (hxy : x ⊑ y) (hyz : y ⊑ z) : x �
   exact RawProd.pleq_transitivity hxy hyz
 
 
+/-- The fundamental bridge: `mk a ⊑ mk b` in QProd iff `a ⊑ b` as raw terms.
+    Replaces the need for separate `le_mk_iff` / `mk_le_iff` variants. -/
+lemma mk_pleq_mk_iff {a b : RawProd} : (mk a : QProd) ⊑ mk b ↔ RawProd.pleq_raw a b := by
+  show RawProd.pleq_raw (RawProd.normalize a) (RawProd.normalize b) ↔ RawProd.pleq_raw a b
+  exact (RawProd.pleq_raw_normalize_left a (RawProd.normalize b)).symm.trans
+        (RawProd.pleq_raw_normalize_right a b).symm
+
+/-- Lift a unary QProd order statement from a raw `pleq_raw` statement.
+    Analogue of `lift_eq₁` for `⊑` instead of `=`.
+    Note: uses term-mode `▸` rather than `rw` because `rw` cannot match `mk a` against `⟦a⟧`
+    even though they are definitionally equal. -/
+lemma lift_pleq₁ {f g : RawProd → RawProd} {F G : QProd → QProd}
+    (hF : ∀ a, F (mk a) = mk (f a) := by intro _; rfl)
+    (hG : ∀ a, G (mk a) = mk (g a) := by intro _; rfl)
+    (h : ∀ a, RawProd.pleq_raw (f a) (g a)) :
+    ∀ x, F x ⊑ G x :=
+  Quotient.ind (fun a => hF a ▸ hG a ▸ mk_pleq_mk_iff.mpr (h a))
+
+/-- Lift a binary QProd order statement from a raw `pleq_raw` statement.
+    Analogue of `lift_eq₂` for `⊑` instead of `=`.
+    Note: uses term-mode `▸` rather than `rw` — see `lift_pleq₁`. -/
+lemma lift_pleq₂ {f g : RawProd → RawProd → RawProd} {F G : QProd → QProd → QProd}
+    (hF : ∀ a b, F (mk a) (mk b) = mk (f a b) := by intro _ _; rfl)
+    (hG : ∀ a b, G (mk a) (mk b) = mk (g a b) := by intro _ _; rfl)
+    (h : ∀ a b, RawProd.pleq_raw (f a b) (g a b)) :
+    ∀ x y, F x y ⊑ G x y :=
+  fun x y => Quotient.ind₂ (fun a b => hF a b ▸ hG a b ▸ mk_pleq_mk_iff.mpr (h a b)) x y
+
 
 -- instance : PartialOrder QProd where
 --   le := pleq
@@ -313,19 +361,15 @@ theorem pleq_transitivity (x y z : QProd) (hxy : x ⊑ y) (hyz : y ⊑ z) : x �
 
 
 lemma pleq_prune_iff {x y : QProd} : x ⊑ y ↔ x ⊓ y = x := by
+  have hxy : x ⊓ y = mk (x.rep ⊓ y.rep) := by
+    conv_lhs => rw [← mk_rep_eq (q := x), ← mk_rep_eq (q := y)]
+    exact prune_mk_mk x.rep y.rep
   constructor
   · intro h
-    have hxy : x ⊓ y = mk (x.rep ⊓ y.rep) := by
-      conv_lhs => rw [← mk_rep_eq (q := x), ← mk_rep_eq (q := y)]
-      exact prune_mk_mk x.rep y.rep
     rw [hxy]; exact (Quotient.sound (RawProd.pleq_prune_raw_iff.mp h)).trans mk_rep_eq
   · intro h
     apply RawProd.pleq_prune_raw_iff.mpr
-    have hxy : x ⊓ y = mk (x.rep ⊓ y.rep) := by
-      conv_lhs => rw [← mk_rep_eq (q := x), ← mk_rep_eq (q := y)]
-      exact prune_mk_mk x.rep y.rep
-    rw [hxy] at h
-    exact Quotient.exact (h.trans mk_rep_eq.symm)
+    rw [hxy] at h; exact Quotient.exact (h.trans mk_rep_eq.symm)
 
 
 end QProd
