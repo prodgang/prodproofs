@@ -34,7 +34,7 @@ lemma pleq_zero_eq_zero {x : RawProd} (hleq : x ⊑ zero) : x = zero := by
 lemma nil_pleq_list_brak {xs : List RawProd} : pleq_list [] xs := by
   simp only [pleq_list]
 
-lemma nil_pleq_brak {xs : List RawProd} : brak [] ⊑ brak xs := by
+lemma nil_pleq_brak {xs : List RawProd} : nil ⊑ brak xs := by
   induction xs with
   | nil => simp only [pleq_raw, nil_pleq_list_brak]
   | cons x xx ih =>
@@ -77,7 +77,7 @@ lemma replicate_zero_pleq_brak {n: ℕ } (xs : List RawProd): brak (List.replica
       simp only [List.replicate_succ, pleq_list, zero_pleq, true_and]
       exact ih ys
 
-lemma brak_pleq_nil_iff_allzero {xs : List RawProd} : brak xs ⊑ brak [] ↔ allzero xs := by
+lemma brak_pleq_nil_iff_allzero {xs : List RawProd} : brak xs ⊑ nil ↔ allzero xs := by
   constructor
   . intro hleq
     cases xs with
@@ -91,6 +91,16 @@ lemma brak_pleq_nil_iff_allzero {xs : List RawProd} : brak xs ⊑ brak [] ↔ al
     simp only [replicate_zero_pleq_brak]
 
 
+-- Consequence of brak_pleq_nil_iff_allzero: every x ⊑ nil is zero or a brak with allzero list.
+-- Used in shallow.lean to case-split on components.
+lemma pleq_nil_cases {x : RawProd} (h : x ⊑ nil) :
+    x = zero ∨ ∃ ys, x = brak ys ∧ allzero ys := by
+    cases x with
+    | zero => left; rfl
+    | brak xs => right; use xs; exact ⟨rfl, brak_pleq_nil_iff_allzero.mp h⟩
+-- cases x: zero → left; brak xs → right via brak_pleq_nil_iff_allzero
+
+-- this seems like a clumsy lemma 0 why not use allzero?
 lemma brak_pleq_replicate_zero_eq_replicate_zero {xs : List RawProd} (hpleq: ∃ n, brak xs ⊑ brak (List.replicate n zero)) : xs = List.replicate xs.length zero := by
   induction xs with
   | nil => simp only [List.length_nil, List.replicate_zero]
@@ -282,15 +292,15 @@ theorem pleq_dvd {x y : RawProd } (hnz: x ≠ zero) (hlq: x ⊑ y ): interp_raw 
 --   x = [[[]]] = 2^(2^1) = 4,  y = [[0,[]]] = 2^(2^0 · 3^1) = 2^3 = 8
 --   so interp_raw x = 4,  interp_raw y = 8,  4 ∣ 8,  but x ⊄ y.
 theorem converse_counterexample :
-    let x := brak [brak [brak []]]
-    let y := brak [brak [zero, brak []]]
+    let x := brak [brak [nil]]
+    let y := brak [brak [zero, nil]]
     interp_raw x = 4 ∧ interp_raw y = 8 ∧ (4 : ℕ) ∣ 8 ∧ ¬ (x ⊑ y) := by
   refine ⟨?_, ?_, ?_, ?_⟩
   · simp only [interp_raw, interp_list, Nat.nth_prime_zero_eq_two]; norm_num
   · simp only [interp_raw, interp_list, Nat.nth_prime_zero_eq_two]; norm_num
   · norm_num
   · intro h
-    have : brak [] ⊑ (zero : RawProd) :=
+    have : nil ⊑ (zero : RawProd) :=
       (cons_pleq_cons_iff.mp (cons_pleq_cons_iff.mp h).1).1
     simp only [pleq_raw] at this
 

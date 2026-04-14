@@ -138,7 +138,15 @@ Heyting (for every $a, b$ there is a greatest $x$ s.t. $a \land x \leq b$)
 
 
 
-Boolean (every $a$ has a complement $\neq a$ such that $a \lor \neg a = \top, a \land \neg a = []$)
-* This only works for sublattices of depth at most 2 (productive equivalent of square-free)
-* Since $\top$ is square-free, it is just a list of $0$ and $[]$. So the complement of $a$ is just swapping $0$ and $[]$ in all the positions which are $[]$ in $\top$ originally (to maintain closure).
- - eg in the sublattice of 30 ($[[], [], []]$), the complement of $[[], 0, []]$ is $[0, [], 0]$.
+Boolean algebra
+* This only works for sublattices whose top element is "shallow" - i.e. of depth at most 2 (productive equivalent of square-free)
+
+$x$ is shallow iff $\downarrow x - \{0\}$ is a boolean algebra. 
+
+Proof:
+
+In the forwards direction, assume that $x$ is shallow. Then identify $x$ with the set of primes $\{p_1, ..., p_k\}$ such that $x_i = []$ (since $x$ is shallow, all other $x_j$ are $0$). Then every $y \sqsubseteq x$ corresponds to a subset of $\{p_1, ..., p_k\}$. Since the lattice of subsets is a Boolean algebra, so is the lattice $\downarrow x$.
+
+In the other direction, suppose that $x = [x_1, ..., x_n]$ is not shallow. Assume $x_1$ is strictly greater than $[]$ (there'll always be some $x_i$ like this but assuming its $x_1$ just means there's fewer ... in the proof). Thus we have an increasing chain $[[]] \sqsubset [x_1] \sqsubseteq x$.
+
+Consider $\lnot [[]] = [[]] \to []$.  By definition, $[[]] \sqcap \lnot [[]] = []$ and so $\lnot [[]] = [0, y_2, ..., y_n]$ for some $y_i$. But that means $[[]] \sqcup \lnot [[]] = [[], y_2, ..., y_n] \sqsubset [x_1, y_2, ..., y_n] \sqsubseteq x$. Therefore $[[]] \sqcup \lnot [[]] \neq x$, so $\downarrow x$ is not a Boolean algebra.
