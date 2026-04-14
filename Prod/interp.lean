@@ -232,7 +232,7 @@ lemma factorization_interp_list_zero {xs : List RawProd} (i : ℕ) :
 
 noncomputable def fromNat : Nat → RawProd
   | 0 => zero
-  | 1 => brak []
+  | 1 => nil
   | n@(Nat.succ _) =>
       let max_index := n -- crude but valid upper bound: p_i > i, so factorization is zero past index n
 

@@ -72,7 +72,7 @@ def normalize : RawProd → RawProd
 lemma normalize_zero_eq_zero : normalize zero = zero := by simp only [normalize]
 
 @[simp]
-lemma normalize_nil_eq_nil : normalize (brak []) = (brak []) := by simp only [normalize, List.map_nil, trim_nil_eq_nil]
+lemma normalize_nil_eq_nil : normalize nil = nil := by simp only [normalize, List.map_nil, trim_nil_eq_nil]
 
 lemma normalize_brak_neq_zero (xs : List RawProd) : normalize (brak xs) ≠ zero := by simp only [normalize, ne_eq, reduceCtorEq, not_false_eq_true]
 
@@ -308,7 +308,7 @@ constructor
     rename_i hxs_naz hys_naz
     simp_all only [List.cons.injEq, and_self]
 
-lemma brak_equiv_nil_iff_allzero {xs : List RawProd} : (brak xs).equiv (brak []) ↔ allzero xs := by
+lemma brak_equiv_nil_iff_allzero {xs : List RawProd} : (brak xs).equiv nil ↔ allzero xs := by
   simp only [equiv, normalize, List.map_nil, trim_nil_eq_nil, brak.injEq]
   rw [trim_eq_nil_iff]
   simp only [allzero_iff, List.mem_map, forall_exists_index, and_imp]
@@ -320,7 +320,7 @@ lemma brak_equiv_nil_iff_allzero {xs : List RawProd} : (brak xs).equiv (brak [])
     rw [h y hy, normalize_zero_eq_zero]
 
 
-lemma nil_equiv_brak_iff_allzero {xs : List RawProd} : (brak []).equiv (brak xs) ↔ allzero xs := by
+lemma nil_equiv_brak_iff_allzero {xs : List RawProd} : nil.equiv (brak xs) ↔ allzero xs := by
   constructor
   · intro h; exact brak_equiv_nil_iff_allzero.mp (equiv_symm h)
   · intro h; exact equiv_symm (brak_equiv_nil_iff_allzero.mpr h)
@@ -351,7 +351,7 @@ lemma brak_eq_mk (x : RawProd) : ⟦x⟧ = mk x := by rfl
 
 lemma mk_zero_eq_zero : mk RawProd.zero = QProd.zero := by rfl
 
-lemma mk_nil_eq_nil : mk (RawProd.brak []) = ofList [] := by rfl
+lemma mk_nil_eq_nil : mk (RawProd.nil) = ofList [] := by rfl
 
 lemma ofList_map_mk_eq_mk_brak (xs : List RawProd) :
     ofList (List.map mk xs) = mk (RawProd.brak xs) := by

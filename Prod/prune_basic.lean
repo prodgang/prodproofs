@@ -36,32 +36,32 @@ lemma prune_list_nil_left (xs : List RawProd) : prune_list [] xs = [] := by
   simp only [prune_list]
 
 @[simp]
-lemma brak_prune_nil_eq_nil {xs : List RawProd} : (brak xs) ⊓ (brak []) = brak [] := by
+lemma brak_prune_nil_eq_nil {xs : List RawProd} : (brak xs) ⊓ nil = nil := by
   -- how does simp not work?
     simp only [prune_raw, prune_list_nil_right]
 
 @[simp]
-lemma brak_nil_prune_eq_nil (xs : List RawProd) : (brak []) ⊓ (brak xs) = brak [] := by
+lemma brak_nil_prune_eq_nil (xs : List RawProd) : nil ⊓ (brak xs) = nil := by
   cases xs <;> simp only [prune_raw, prune_list_nil_right, prune_list_nil_left]
 
 @[simp]
-lemma prune_nil_nz_eq_nil (x : RawProd) (hnz: x ≠ zero) : x ⊓ (brak []) = brak [] := by
+lemma prune_nil_nz_eq_nil (x : RawProd) (hnz: x ≠ zero) : x ⊓ nil = nil := by
     cases x <;> simp only [prune_raw, zero_neq_brak, prune_list_nil_right]
     contradiction
 
 
 @[simp]
-lemma prune_nil_eq_nil (xs : List RawProd) : (brak xs) ⊓ (brak []) = brak [] := by
+lemma prune_nil_eq_nil (xs : List RawProd) : (brak xs) ⊓ nil = nil := by
     cases xs <;> simp only [prune_raw, prune_list_nil_right]
 
 
 @[simp]
-lemma nil_prune_nz_eq_nil (x : RawProd) (hnx : x ≠ zero) : (brak []) ⊓ x = brak [] := by
+lemma nil_prune_nz_eq_nil (x : RawProd) (hnx : x ≠ zero) : nil ⊓ x = nil := by
   cases x <;> simp only [prune_raw, zero_neq_brak, prune_list_nil_left]
   contradiction
 
 @[simp]
-lemma nil_prune_brak_eq_nil (xs : List RawProd)  : (brak []) ⊓ (brak xs) = brak [] := by
+lemma nil_prune_brak_eq_nil (xs : List RawProd)  : nil ⊓ (brak xs) = nil := by
   cases xs <;> simp only [prune_raw, prune_list_nil_right, prune_list_nil_left]
 
 lemma brak_prune_brak_neq_zero (xs ys : List RawProd) : (brak xs) ⊓ (brak ys) ≠ zero := by
@@ -143,7 +143,7 @@ theorem prune_raw_assoc : ∀ x y z : RawProd, (x ⊓ y) ⊓ z = x ⊓ (y ⊓ z)
 
 
 -- helper to cover all nil cases below
-lemma prune_raw_trim_equiv {xs ys : List RawProd} : (brak []).equiv (brak xs) → (brak []).equiv (brak xs ⊓ brak ys) := by
+lemma prune_raw_trim_equiv {xs ys : List RawProd} : nil.equiv (brak xs) → nil.equiv (brak xs ⊓ brak ys) := by
   intro h1
   have haz : allzero xs := by exact nil_equiv_brak_iff_allzero.mp h1
   simp only [allzero_prune_eq_replicate haz]

@@ -38,17 +38,17 @@ lemma graft_list_nil_left (xs : List RawProd) : graft_list [] xs = xs := by
   simp only [graft_list]
 
 @[simp]
-lemma brak_graft_nil_eq_self {xs : List RawProd} : (brak xs) ⊔ (brak []) = brak xs := by
+lemma brak_graft_nil_eq_self {xs : List RawProd} : (brak xs) ⊔ nil = brak xs := by
   simp only [graft_raw, graft_list_nil_right]
 
 
 @[simp]
-lemma brak_nil_graft_eq_self (xs : List RawProd) : (brak []) ⊔ (brak xs) = brak xs := by
+lemma brak_nil_graft_eq_self (xs : List RawProd) : nil ⊔ (brak xs) = brak xs := by
   simp only [graft_raw, graft_list_nil_left]
 
 
 @[simp]
-lemma graft_nil_eq_self (x : RawProd) (hnz: x ≠ zero) : x ⊔ (brak []) = x := by
+lemma graft_nil_eq_self (x : RawProd) (hnz: x ≠ zero) : x ⊔ nil = x := by
   -- how does simp not work?
     cases x
     . simp only [zero_graft_eq_self, reduceCtorEq]; contradiction
@@ -56,7 +56,7 @@ lemma graft_nil_eq_self (x : RawProd) (hnz: x ≠ zero) : x ⊔ (brak []) = x :=
 
 
 @[simp]
-lemma nil_graft_eq_self {x : RawProd} (hnx : x ≠ zero) : (brak []) ⊔ x = x := by
+lemma nil_graft_eq_self {x : RawProd} (hnx : x ≠ zero) : nil ⊔ x = x := by
   cases x
   . simp only [graft_zero_eq_self, reduceCtorEq]; contradiction
   . simp only [brak_nil_graft_eq_self]

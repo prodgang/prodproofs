@@ -10,6 +10,9 @@ inductive RawProd where
 
 namespace RawProd
 
+/-- The minimum non-zero RawProd element. -/
+abbrev nil : RawProd := brak []
+
 @[simp]
 lemma zero_neq_brak {xs : List RawProd} : zero ≠ brak xs := by simp only [ne_eq, reduceCtorEq, not_false_eq_true]
 
@@ -54,7 +57,7 @@ theorem induction {P : RawProd → Prop}
 
 theorem induction_list {P : RawProd → Prop}
     (h_zero : P zero)
-    (h_nil : P (brak []))
+    (h_nil : P nil)
     (h_cons : ∀ x xs, P x → P (brak xs) → P (brak (x::xs)))
     : ∀ x, P x := by
     intro x
@@ -96,8 +99,8 @@ theorem induction_list₂
  {P : RawProd → RawProd → Prop}
   (h_zero_left  : ∀ y,                 P zero      y)
   (h_zero_right : ∀ x,                 P x         zero)
-  (h_nil_left   : ∀ ys,                P (brak []) (brak ys))
-  (h_nil_right  : ∀ xs,                P (brak xs) (brak []))
+  (h_nil_left   : ∀ ys,                P nil (brak ys))
+  (h_nil_right  : ∀ xs,                P (brak xs) nil)
   (h_cons_cons  : ∀ x y xs ys,
      (P x y) →
      (P (brak xs) (brak ys)) →
@@ -127,9 +130,9 @@ theorem induction_list₃
   (h_zero_left  : ∀ y z, P zero y z)
   (h_zero_mid : ∀ x z, P x zero z)
   (h_zero_right : ∀ x y, P x y zero)
-  (h_nil_left   : ∀ ys zs,                P (brak []) (brak ys) (brak zs))
-  (h_nil_mid   : ∀ xs zs,                 P (brak xs) (brak []) (brak zs))
-  (h_nil_right  : ∀ xs ys,                P (brak xs) (brak ys) (brak []))
+  (h_nil_left   : ∀ ys zs,                P nil (brak ys) (brak zs))
+  (h_nil_mid   : ∀ xs zs,                 P (brak xs) nil (brak zs))
+  (h_nil_right  : ∀ xs ys,                P (brak xs) (brak ys) nil)
   (h_cons_cons_cons  : ∀ x y z xs ys zs ,
     (P x y z) → (P (brak xs) (brak ys) (brak zs))
     → P (brak (x::xs)) (brak (y::ys)) (brak (z::zs)))
@@ -167,10 +170,10 @@ theorem induction_list₄
   (h_zero2 : ∀ w y z, P w zero y z)
   (h_zero3 : ∀ w x z, P w x zero z)
   (h_zero4 : ∀ w x y, P w x y zero)
-  (h_nil1   : ∀ xs ys zs,                P (brak []) (brak xs) (brak ys) (brak zs))
-  (h_nil2   : ∀ ws ys zs,                P (brak ws) (brak []) (brak ys) (brak zs))
-  (h_nil3   : ∀ ws xs zs,                P (brak ws) (brak xs) (brak []) (brak zs))
-  (h_nil4   : ∀ ws xs ys,                P (brak ws) (brak xs) (brak ys) (brak []))
+  (h_nil1   : ∀ xs ys zs,                P nil (brak xs) (brak ys) (brak zs))
+  (h_nil2   : ∀ ws ys zs,                P (brak ws) nil (brak ys) (brak zs))
+  (h_nil3   : ∀ ws xs zs,                P (brak ws) (brak xs) nil (brak zs))
+  (h_nil4   : ∀ ws xs ys,                P (brak ws) (brak xs) (brak ys) nil)
   (h_cons_cons_cons_cons  : ∀ w x y z ws xs ys zs ,
     (P w x y z) → (P (brak ws) (brak xs) (brak ys) (brak zs))
     → P (brak (w::ws)) (brak (x::xs)) (brak (y::ys)) (brak (z::zs)))
