@@ -53,6 +53,10 @@ def shallow : List RawProd → Prop
 --     shallow (x :: xs) ↔ (x = zero ∨ ∃ ys, x = brak ys ∧ allzero ys) ∧ shallow xs := Iff.rfl
 lemma shallow_nil : shallow [] := by simp only [shallow]
 
+lemma shallow_cons_iff {x : RawProd} {xs : List RawProd} : shallow (x::xs) ↔ (x = zero ∨ ∃ ys, x = brak ys ∧ allzero ys) ∧ shallow xs := by
+  simp only [shallow]
+
+
 lemma allzero_shallow {xs : List RawProd} (hs : allzero xs) : shallow xs := by
   induction xs with
   | nil => simp only [shallow]
@@ -92,6 +96,7 @@ lemma shallow_iff_pleq_nil {xs : List RawProd} :
             have := h (i + 1)
             rwa [get_cons_succ] at this
 
+
 -- Shallow is downward-closed under componentwise ⊑
 lemma pleq_shallow {xs ys : List RawProd}
     (hs : shallow ys) (hle : brak xs ⊑ brak ys) : shallow xs := by
@@ -114,13 +119,6 @@ lemma pleq_shallow {xs ys : List RawProd}
           . exact ih hs.2 h2
 
 
-lemma shallow_equiv_shallow {xs ys : List RawProd} (hs: shallow xs) (hequiv : (brak xs).equiv (brak ys)) : shallow ys := by
-  apply pleq_shallow hs
-  -- goal: brak ys ⊑ brak xs
-  -- hequiv : normalize (brak xs) = normalize (brak ys)
-  -- so brak ys ⊑ normalize (brak ys) = normalize (brak xs) ⊒ brak xs
-  rw [pleq_raw_normalize_right, hequiv, ← pleq_raw_normalize_right]
-  exact pleq_raw_refl
 
 -- ---------------------------------------------------------------------------
 -- Section 2: Squarefree correspondence (deferred)
@@ -145,9 +143,6 @@ namespace QProd
 
 open RawProd
 
-/-- The minimum non-zero QProd element (renamed from `unit`). -/
-abbrev nil : QProd := mk RawProd.nil
-
 /-- `x` is shallow if its representative list is shallow. False for QProd.zero
     (since zero.rep = RawProd.zero, which is not brak-form). -/
 def shallow (x : QProd) : Prop :=
@@ -155,8 +150,12 @@ def shallow (x : QProd) : Prop :=
   | RawProd.zero    => False
   | RawProd.brak xs => RawProd.shallow xs
 
--- QProd squarefree correspondence (deferred with RawProd version above)
--- theorem shallow_iff_squarefree {x : QProd} (hx : x ≠ 0) :
---     Squarefree (x.interp) ↔ shallow x := by sorry
+/-- A shallow `x` has representative `brak xs` for some shallow `xs`. -/
+lemma shallow_exists_brak_rep {x : QProd} (hx : shallow x) :
+    ∃ xs, x.rep = brak xs ∧ RawProd.shallow xs := by
+  cases hrep : x.rep with
+  | zero    => simp only [QProd.shallow, hrep] at hx
+  | brak xs => exact ⟨xs, rfl, by rwa [QProd.shallow, hrep] at hx⟩
+
 
 end QProd
