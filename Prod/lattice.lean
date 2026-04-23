@@ -73,4 +73,21 @@ instance : DistribLattice QProd := DistribLattice.ofInfSupLe
   fun x y z => le_of_eq (distrib x y z)
 
 
+lemma pleq_iff_le {x y : QProd} : x ⊑ y ↔ x ≤ y :=
+  pleq_prune_iff.trans inf_eq_left
+
+lemma zero_le (y : QProd) : QProd.zero ≤ y :=
+  pleq_iff_le.mp (Quotient.ind (fun _ => mk_pleq_mk_iff.mpr RawProd.zero_pleq) y)
+
+lemma le_of_mk_pleq {a b : RawProd} (h : RawProd.pleq_raw a b) : (mk a : QProd) ≤ mk b :=
+  pleq_iff_le.mp (mk_pleq_mk_iff.mpr h)
+
+/-- Any `QProd` above `nil` has representative `brak xs` for some `xs`. -/
+lemma exists_brak_rep_of_nil_le {x : QProd} (h : (nil : QProd) ≤ x) :
+    ∃ xs, x.rep = RawProd.brak xs := by
+  rcases hrep : x.rep with _ | xs
+  · rw [← pleq_iff_le, ← mk_rep_eq (q := x), hrep, mk_pleq_mk_iff] at h
+    exact absurd h (by simp only [RawProd.pleq_raw, not_false_eq_true])
+  · exact ⟨xs, rfl⟩
+
 end QProd

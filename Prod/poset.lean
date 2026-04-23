@@ -100,6 +100,39 @@ lemma pleq_nil_cases {x : RawProd} (h : x ⊑ nil) :
     | brak xs => right; use xs; exact ⟨rfl, brak_pleq_nil_iff_allzero.mp h⟩
 -- cases x: zero → left; brak xs → right via brak_pleq_nil_iff_allzero
 
+lemma nil_pleq_iff_ne_zero {y : RawProd} : nil ⊑ y ↔ y ≠ zero := by
+  cases y with
+  | zero => simp only [pleq_raw, ne_eq, not_true_eq_false]
+  | brak ys => exact ⟨fun _ => brak_neq_zero, fun _ => nil_pleq_brak⟩
+
+lemma pleq_nil_equiv_nil {x : RawProd} (h : x ⊑ nil) (hne : x ≠ zero) : x.equiv nil := by
+  rcases pleq_nil_cases h with rfl | ⟨ys, rfl, haz⟩
+  · exact absurd rfl hne
+  · exact brak_equiv_nil_iff_allzero.mpr haz
+
+lemma replicate_nil_pleq_iff (xs : List RawProd) (j : ℕ) :
+    brak (List.replicate j zero ++ [nil]) ⊑ brak xs ↔ get xs j ≠ RawProd.zero := by
+  induction j generalizing xs with
+  | zero =>
+    simp only [List.replicate_zero, List.nil_append]
+    cases xs with
+    | nil =>
+      simp only [get_nil, ne_eq, not_true, iff_false]; intro h
+      exact absurd (allzero_iff.mp (brak_pleq_nil_iff_allzero.mp h) nil (by simp only [List.mem_cons, List.not_mem_nil, or_false])) brak_neq_zero
+    | cons xh xt =>
+      rw [cons_pleq_cons_iff]; simp only [get_cons_zero]
+      exact ⟨fun ⟨h, _⟩ => nil_pleq_iff_ne_zero.mp h,
+             fun h => ⟨nil_pleq_iff_ne_zero.mpr h, nil_pleq_brak⟩⟩
+  | succ n ih =>
+    cases xs with
+    | nil =>
+      simp only [get_nil, ne_eq, not_true, iff_false]; intro h
+      have h_nil : nil ∈ List.replicate (n + 1) zero ++ [nil] := by apply List.mem_append.mpr ; right; apply List.mem_singleton.mpr; rfl
+      exact absurd (allzero_iff.mp (brak_pleq_nil_iff_allzero.mp h) nil (by simp only [h_nil])) brak_neq_zero
+    | cons xh xt =>
+      rw [List.replicate_succ, List.cons_append, cons_pleq_cons_iff]; simp only [get_cons_succ]
+      exact ⟨fun ⟨_, ht⟩ => (ih xt).mp ht, fun h => ⟨zero_pleq, (ih xt).mpr h⟩⟩
+
 -- this seems like a clumsy lemma 0 why not use allzero?
 lemma brak_pleq_replicate_zero_eq_replicate_zero {xs : List RawProd} (hpleq: ∃ n, brak xs ⊑ brak (List.replicate n zero)) : xs = List.replicate xs.length zero := by
   induction xs with
@@ -237,19 +270,14 @@ lemma pleq_raw_normalize_right (x y : RawProd) :
   rw [pleq_prune_raw_iff, pleq_prune_raw_iff]
   have h : (x ⊓ y).equiv (x ⊓ normalize y) :=
     prune_raw_respects_equiv (equiv_refl x) (equiv_symm equiv_of_normalize)
-  constructor
-  · intro he; exact equiv_trans (equiv_symm h) he
-  · intro he; exact equiv_trans h he
+  simp only [equiv] at h ⊢; rw [h]
 
 lemma pleq_raw_normalize_left (x y : RawProd) :
     x ⊑ y ↔ normalize x ⊑ y := by
   rw [pleq_prune_raw_iff, pleq_prune_raw_iff]
   have h : (x ⊓ y).equiv (normalize x ⊓ y) :=
     prune_raw_respects_equiv (equiv_symm equiv_of_normalize) (equiv_refl y)
-  simp only [equiv, normalize_idem] at h ⊢
-  constructor
-  · intro he; exact h.symm.trans he
-  · intro he; exact h.trans he
+  simp only [equiv, normalize_idem] at h ⊢; rw [h]
 
 
 theorem pleq_dvd {x y : RawProd } (hnz: x ≠ zero) (hlq: x ⊑ y ): interp_raw x ∣ interp_raw y := by

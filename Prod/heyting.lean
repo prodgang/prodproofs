@@ -168,12 +168,6 @@ namespace QProd
 
 open RawProd
 
-lemma pleq_iff_le {x y : QProd} : x ⊑ y ↔ x ≤ y :=
-  pleq_prune_iff.trans inf_eq_left
-
-lemma zero_le (y : QProd) : QProd.zero ≤ y :=
-  pleq_iff_le.mp (Quotient.ind (fun _ => mk_pleq_mk_iff.mpr RawProd.zero_pleq) y)
-
 @[reducible]
 def downsetSublattice (x : QProd) : Sublattice QProd where
   carrier    := {y | y ≤ x}

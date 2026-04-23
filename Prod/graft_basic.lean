@@ -62,7 +62,7 @@ lemma nil_graft_eq_self {x : RawProd} (hnx : x ≠ zero) : nil ⊔ x = x := by
   . simp only [brak_nil_graft_eq_self]
 
 
-@[aesop unsafe]
+
 lemma brak_graft_brak_neq_zero (xs ys : List RawProd) : (brak xs) ⊔ (brak ys) ≠ zero := by
   simp only [graft_raw, ne_eq, reduceCtorEq, not_false_eq_true]
 
@@ -70,6 +70,17 @@ lemma brak_graft_brak_neq_zero (xs ys : List RawProd) : (brak xs) ⊔ (brak ys) 
 lemma cons_graft_cons {xs ys : List RawProd} {x y : RawProd} : (brak (x::xs)) ⊔ (brak (y::ys)) = brak ((x ⊔ y) :: graft_list xs ys) := by
   simp only [graft_raw, graft_list]
 
+lemma get_graft_list (xs ys : List RawProd) (i : ℕ) :
+    get (graft_list xs ys) i = graft_raw (get xs i) (get ys i) := by
+  induction xs generalizing ys i with
+  | nil => simp only [graft_list, get_nil, zero_graft_eq_self]
+  | cons xh xt ih =>
+    cases ys with
+    | nil => simp only [graft_list, get_nil, graft_zero_eq_self]
+    | cons yh yt =>
+      simp only [graft_list]; cases i with
+      | zero => simp only [get_cons_zero]
+      | succ n => simp only [get_cons_succ, ih]
 
 theorem graft_raw_idem (x : RawProd) : x ⊔ x = x := by
   induction x using RawProd.induction_list with

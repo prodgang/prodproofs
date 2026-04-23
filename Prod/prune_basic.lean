@@ -25,7 +25,7 @@ lemma zero_prune_eq_zero (x : RawProd) : zero ⊓ x = zero := by simp only [prun
 
 @[simp]
 lemma prune_zero_eq_zero (x : RawProd) : x ⊓ zero = zero := by
-  cases x <;> simp [prune_raw]
+  cases x <;> simp only [prune_raw]
 
 @[simp]
 lemma prune_list_nil_right (xs : List RawProd) : prune_list xs [] = [] := by
@@ -70,26 +70,33 @@ lemma brak_prune_brak_neq_zero (xs ys : List RawProd) : (brak xs) ⊓ (brak ys) 
 lemma cons_prune_cons {xs ys : List RawProd} {x y : RawProd} : (brak (x::xs)) ⊓ (brak (y::ys)) = brak ((x ⊓ y)::(prune_list xs ys)) := by
   simp only [prune_raw, prune_list]
 
+lemma get_prune_list (xs ys : List RawProd) (i : ℕ) :
+    get (prune_list xs ys) i = prune_raw (get xs i) (get ys i) := by
+  induction xs generalizing ys i with
+  | nil => simp only [prune_list, get_nil, zero_prune_eq_zero]
+  | cons xh xt ih =>
+    cases ys with
+    | nil => simp only [prune_list, get_nil, prune_zero_eq_zero]
+    | cons yh yt =>
+      simp only [prune_list]; cases i with
+      | zero => simp only [get_cons_zero]
+      | succ n => simp only [get_cons_succ, ih]
 
--- lemma prune_list_allzero_left {xs ys : List RawProd} (haz : allzero xs) :
---     prune_list xs ys = List.replicate (min xs.length ys.length) zero := by
---   induction xs generalizing ys with
---   | nil => simp [prune_list]
---   | cons x xs ih =>
---     obtain ⟨hxz, hxsaz⟩ := allzero_cons haz
---     subst hxz
---     cases ys with
---     | nil => simp only [prune_list, List.length_cons, List.length_nil, Nat.le_add_left, Nat.min_eq_right, List.replicate_zero]
---     | cons y ys =>
---       simp only [prune_list, zero_prune_eq_zero, List.length_cons]
---       have hmin : min (xs.length + 1) (ys.length + 1) = min xs.length ys.length + 1 := by omega
---       rw [hmin, List.replicate_succ, ih hxsaz]
+
+lemma nil_prune_eq_zero_iff {y : RawProd} : nil ⊓ y = zero ↔ y = zero := by
+  constructor
+  · cases y with
+    | zero => intro; rfl
+    | brak ys =>
+      simp only [prune_raw, prune_list_nil_left]
+      exact fun h => absurd h brak_neq_zero
+  · intro h; rw [h, prune_zero_eq_zero]
 
 lemma allzero_prune_eq_replicate {xs ys : List RawProd} (haz : allzero xs) :
     ((brak xs) ⊓ (brak ys)) = brak (List.replicate (min xs.length ys.length) zero) := by
   simp only [prune_raw]
   induction xs generalizing ys with
-  | nil => simp [prune_list]
+  | nil => simp only [prune_list, List.length_nil, Nat.zero_min, List.replicate_zero]
   | cons x xs ih =>
     obtain ⟨hxz, hxsaz⟩ := allzero_cons haz
     subst hxz
@@ -167,7 +174,7 @@ theorem prune_raw_respects_equiv {x x' y y' : RawProd} (hx : x.equiv x') (hy : y
     obtain ⟨h2h, h2t⟩ := cons_equiv_cons_iff.mpr h2
     apply cons_equiv_cons_iff.mp; constructor
     . apply h; exact h1h; exact h2h
-    . simp [prune_raw] at hs
+    . simp only [prune_raw] at hs
       apply hs; exact h1t; exact h2t
 
 

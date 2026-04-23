@@ -19,17 +19,10 @@ def trim (xs : List RawProd) : List RawProd := xs.rdropWhile (. == zero)
 
 
 
-lemma trim_nil_eq_nil : trim [] = [] := by simp [trim]
-
--- @[simp] lemma trim_cons (x : RawProd) (xs : List RawProd) (hnz : x ≠ zero) : trim (x :: xs) = x :: trim xs := by
---   simp [trim]
+lemma trim_nil_eq_nil : trim [] = [] := by simp only [trim, List.rdropWhile_nil]
 
 lemma trim_append_brak_eq_self (xs ys: List RawProd): trim ( xs ++  [brak ys]) = xs ++ [brak ys] := by
   simp only [trim, beq_iff_eq, reduceCtorEq, not_false_eq_true, List.rdropWhile_concat_neg]
-
-
--- lemma trim_idem (xs : List RawProd) : trim (trim xs) = trim xs := by
---   apply List.rdropWhile_idempotent
 
 
 lemma trim_replicate_zero_eq_nil {n : ℕ } : trim (List.replicate n zero) = [] := by
@@ -43,19 +36,11 @@ lemma trim_replicate_zero_eq_nil {n : ℕ } : trim (List.replicate n zero) = [] 
 
 lemma trim_append_zero (xs : List RawProd) : trim (xs ++ [zero]) = trim xs := by
   induction xs with
-  | nil => simp [trim]
+  | nil => simp only [trim]; apply List.rdropWhile_concat_pos; rfl
   | cons y ys ih =>
     simp only [trim]
     apply List.rdropWhile_concat_pos (. == zero) (y::ys) zero
     rfl
-
--- lemma trim_length_leq (xs : List RawProd) : (trim xs).length ≤ xs.length := by
---   simp [trim, List.rdropWhile]
---   have h : (List.dropWhile (fun x ↦ x == zero) xs.reverse).length ≤ xs.reverse.length := by apply List.length_dropWhile_le (. == zero) xs.reverse
---   have h2 : xs.length = xs.reverse.length := by simp only [List.length_reverse]
---   rw [h2]
---   exact h
-
 
 lemma trim_append_brak_neq_nil (xs ys : List RawProd) : trim (xs ++ [brak ys]) ≠ [] := by
   simp only [trim, beq_iff_eq, reduceCtorEq, not_false_eq_true, List.rdropWhile_concat_neg, ne_eq,
@@ -167,7 +152,7 @@ lemma equiv_of_normalize {x : RawProd} : (normalize x).equiv x := by
 
 lemma brak_map_normalize (xs : List RawProd) :
      (brak (List.map normalize xs)).equiv (brak xs) := by
-  simp [equiv, normalize]
+  simp only [equiv, normalize, List.map_map, brak.injEq]
   congr 1
   simp only [List.map_inj_left, Function.comp_apply, normalize_idem, implies_true]
 
@@ -180,7 +165,7 @@ def allzero (xs : List RawProd ): Prop := xs = List.replicate xs.length zero
 
 instance decidable_allzero (xs : List RawProd) [DecidableEq RawProd] :
   Decidable (allzero xs) := by
-  dsimp [allzero]
+  dsimp only [allzero]
   infer_instance
 
 
@@ -221,6 +206,16 @@ lemma allzero_cons {x : RawProd} {xs : List RawProd} (haz : allzero (x::xs)) : x
   rw [List.replicate_succ, List.cons.injEq] at haz
   exact haz
 
+lemma allzero_get_zero {xs : List RawProd} (h : allzero xs) (i : ℕ) : get xs i = zero := by
+  rw [allzero_iff] at h
+  induction xs generalizing i with
+  | nil => simp only [get_nil]
+  | cons xh xt ih =>
+    cases i with
+    | zero => rw [get_cons_zero]; exact h xh (by simp only [List.mem_cons, true_or])
+    | succ n => rw [get_cons_succ]; exact ih (fun x hm => h x (List.mem_cons_of_mem _ hm)) n
+
+
 
 lemma trim_eq_nil_iff {xs : List RawProd} : trim xs = [] ↔ RawProd.allzero xs := by
   induction xs using List.reverseRecOn with
@@ -244,7 +239,7 @@ lemma trim_eq_nil_iff {xs : List RawProd} : trim xs = [] ↔ RawProd.allzero xs 
 
 @[simp]
 lemma trim_allzero_eq_nil {xs : List RawProd } (hz : allzero xs) : trim xs = [] := by
-  simp [allzero] at hz
+  simp only [allzero] at hz
   rw [hz]
   apply trim_replicate_zero_eq_nil
 
@@ -347,6 +342,8 @@ def rep : QProd → RawProd :=
 def ofList (xs : List QProd) : QProd :=
   mk (RawProd.brak (xs.map rep))
 
+abbrev nil : QProd := mk RawProd.nil
+
 lemma brak_eq_mk (x : RawProd) : ⟦x⟧ = mk x := by rfl
 
 lemma mk_zero_eq_zero : mk RawProd.zero = QProd.zero := by rfl
@@ -358,6 +355,7 @@ lemma ofList_map_mk_eq_mk_brak (xs : List RawProd) :
   simp only [ofList, rep, List.map_map]
   apply Quotient.sound
   exact RawProd.brak_map_normalize xs
+
 
 /-- Induction principle for QProd -/
 theorem induction {P : QProd → Prop}
@@ -396,6 +394,11 @@ lemma rep_equiv_eq {x y : QProd } :  x.rep.equiv y.rep → x = y := by
     x = mk (rep x) := (mk_rep_eq).symm
     _ = mk (rep y) := Quotient.sound hequiv
     _ = y := mk_rep_eq
+
+/-- Every `QProd` whose representative is `brak xs` equals `mk (brak xs)`. -/
+lemma eq_mk_brak_of_rep {x : QProd} {xs : List RawProd} (h : x.rep = RawProd.brak xs) :
+    x = mk (RawProd.brak xs) := by
+  conv_lhs => rw [← mk_rep_eq (q := x), h]
 
 /-! ### Lifting API
 

@@ -113,7 +113,7 @@ lemma interp_eq_interp_trim (xs : List RawProd) :
 
 mutual
 lemma interp_eq_norm_interp : ∀ (x : RawProd), interp_raw (normalize x) = interp_raw x
-  | zero => by simp [normalize]
+  | zero => by simp only [normalize, interp_raw_zero]
   | brak xs => by
       simp only [normalize, interp_raw]
       rw [interp_list_eq_interp_list_trim]
@@ -121,7 +121,7 @@ lemma interp_eq_norm_interp : ∀ (x : RawProd), interp_raw (normalize x) = inte
 
 lemma interp_list_map_normalize : ∀ (xs : List RawProd) (k : ℕ),
     interp_list (List.map normalize xs) k = interp_list xs k
-  | [], _ => by simp [interp_list]
+  | [], _ => by simp only [List.map_nil, interp_list]
   | x :: xs, k => by
       simp only [List.map_cons, interp_list]
       rw [interp_eq_norm_interp x]
@@ -142,7 +142,7 @@ theorem equiv_interp_eq {x y : RawProd }: equiv x y → interp_raw x = interp_ra
     simp only [equiv, normalize] at h_equiv
     have h1 : interp_list (trim (List.map normalize xs)) 0 =
               interp_list (trim (List.map normalize ys)) 0 := by simp_all only [brak.injEq]
-    simp [interp_list_eq_interp_list_trim] at h1
+    simp only [interp_list_eq_interp_list_trim] at h1
     rw [interp_list_map_normalize, interp_list_map_normalize] at h1
     exact h1
 
@@ -161,24 +161,11 @@ lemma interp_list_neq_zero {i : ℕ} (xs : List RawProd): interp_list xs i ≠ 0
 lemma interp_raw_eq_zero_eq_zero (x : RawProd) (hz : RawProd.interp_raw x = 0) : x = RawProd.zero := by
   match x with
   | zero => simp only
-  | brak xs => simp [interp_raw, interp_list_neq_zero] at hz
+  | brak xs => simp only [interp_raw, interp_list_neq_zero] at hz
 
 
 
 /-! ## Bridge Lemma: connecting interp_list to prime factorizations -/
-
-/-- Access the i-th element of a list, defaulting to zero. -/
-def get (xs : List RawProd) (i : ℕ) : RawProd := xs.getD i zero
-
-@[simp] lemma get_nil {i : ℕ} : get [] i = zero := by
-  simp only [get, List.getD_eq_getElem?_getD, List.length_nil, not_lt_zero', not_false_eq_true,
-    getElem?_neg, Option.getD_none]
-
-@[simp] lemma get_cons_zero {x : RawProd} {xs : List RawProd} : get (x :: xs) 0 = x := by
-  simp [get]
-
-@[simp] lemma get_cons_succ {x : RawProd} {xs : List RawProd} {i : ℕ} : get (x :: xs) (i + 1) = get xs i := by
-  simp only [get, List.getD_eq_getElem?_getD, List.getElem?_cons_succ]
 
 lemma factorization_add {p n m : ℕ} : (n.factorization + m.factorization) p = n.factorization p + m.factorization p := by
   simp only [Nat.factorization, Finsupp.coe_add, Finsupp.coe_mk, Pi.add_apply]

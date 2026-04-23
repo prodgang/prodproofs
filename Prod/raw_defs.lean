@@ -19,29 +19,48 @@ lemma zero_neq_brak {xs : List RawProd} : zero ≠ brak xs := by simp only [ne_e
 @[simp]
 lemma brak_neq_zero {xs : List RawProd} : brak xs ≠ zero := by simp only [ne_eq, reduceCtorEq, not_false_eq_true]
 
+/-- Access the i-th element of a list, defaulting to zero. -/
+def get (xs : List RawProd) (i : ℕ) : RawProd := xs.getD i zero
+
+@[simp] lemma get_nil {i : ℕ} : get [] i = zero := by
+  simp only [get, List.getD_eq_getElem?_getD, List.length_nil, Nat.not_lt_zero, not_false_eq_true,
+    getElem?_neg, Option.getD_none]
+
+@[simp] lemma get_cons_zero {x : RawProd} {xs : List RawProd} : get (x :: xs) 0 = x := by
+  simp only [get, List.getD_eq_getElem?_getD, List.length_cons, Nat.zero_lt_succ, getElem?_pos,
+    List.getElem_cons_zero, Option.getD_some]
+
+@[simp] lemma get_cons_succ {x : RawProd} {xs : List RawProd} {i : ℕ} : get (x :: xs) (i + 1) = get xs i := by
+  simp only [get, List.getD_eq_getElem?_getD, List.getElem?_cons_succ]
+
+lemma get_replicate_nil_pos (j : ℕ) :
+    get (List.replicate j zero ++ [nil]) j = nil := by
+  induction j with
+  | zero => simp only [List.replicate_zero, List.nil_append, get_cons_zero]
+  | succ n ih => simp only [List.replicate_succ, List.cons_append, get_cons_succ, ih]
 
 -- Decidable equality via mutual structural recursion; BEq and LawfulBEq synthesize automatically.
 mutual
   def decEqRaw : (a b : RawProd) → Decidable (a = b)
     | .zero,    .zero   => isTrue rfl
-    | .zero,    .brak _ => isFalse (by simp)
-    | .brak _,  .zero   => isFalse (by simp)
+    | .zero,    .brak _ => isFalse (by simp only [zero_neq_brak, not_false_eq_true])
+    | .brak _,  .zero   => isFalse (by simp only [brak_neq_zero, not_false_eq_true])
     | .brak xs, .brak ys =>
       match decEqList xs ys with
       | isTrue h  => isTrue (congrArg RawProd.brak h)
-      | isFalse h => isFalse (by simp [h])
+      | isFalse h => isFalse (by simp only [brak.injEq, h, not_false_eq_true])
 
   def decEqList : (as bs : List RawProd) → Decidable (as = bs)
     | [],    []    => isTrue rfl
-    | [],    _::_  => isFalse (by simp)
-    | _::_,  []    => isFalse (by simp)
+    | [],    _::_  => isFalse (by simp only [List.nil_eq, reduceCtorEq, not_false_eq_true])
+    | _::_,  []    => isFalse (by simp only [reduceCtorEq, not_false_eq_true])
     | a::as, b::bs =>
       match decEqRaw a b with
-      | isFalse h => isFalse (by simp [h])
+      | isFalse h => isFalse (by simp only [List.cons.injEq, h, false_and, not_false_eq_true])
       | isTrue ha =>
         match decEqList as bs with
         | isTrue hbs => isTrue (by rw [ha, hbs])
-        | isFalse h  => isFalse (by simp [h])
+        | isFalse h  => isFalse (by simp only [List.cons.injEq, h, and_false, not_false_eq_true])
 end
 
 instance : DecidableEq RawProd := decEqRaw

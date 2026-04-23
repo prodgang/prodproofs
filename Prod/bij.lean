@@ -96,6 +96,14 @@ theorem interp_inj {x y : RawProd} : interp_raw x = interp_raw y → x.equiv y :
           exact equiv_refl zero
 
 
+lemma brak_equiv_get_equiv {xs ys : List RawProd}
+    (h : (brak xs).equiv (brak ys)) (i : ℕ) : (get xs i).equiv (get ys i) := by
+  apply interp_inj
+  have heq : interp_raw (brak xs) = interp_raw (brak ys) := equiv_interp_eq h
+  simp only [interp_raw] at heq
+  linarith [factorization_interp_list_zero (xs := xs) i, factorization_interp_list_zero (xs := ys) i,
+            heq ▸ (factorization_interp_list_zero (xs := xs) i)]
+
 /-! ### Surjectivity -/
 
 
@@ -126,14 +134,14 @@ theorem interp_fromNat (n : ℕ) : interp_raw (fromNat n) = n := by
           simp only [Nat.succ_eq_add_one, Nat.add_assoc, one_add_one_eq_two]
           if hi_bound : i < (m+2) then
             simp only [get]
-            rw [List.getD_eq_getElem _ zero (by simp [hi_bound])]
+            rw [List.getD_eq_getElem _ zero (by simp only [List.length_map, List.length_range,
+              hi_bound])]
             simp
             apply ih
             apply Nat.factorization_lt
             linarith
 
           else
-
             simp only [get]
             rw [List.getD_eq_default _ zero (by simp only [List.length_map, List.length_range]; linarith)]
             simp only [interp_raw]

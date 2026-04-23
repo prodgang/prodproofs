@@ -5,7 +5,9 @@ This repo contains the proofs of the major results of productive numbers. The pr
 Main results formalized so far:
 
 1. Bijection - there's a bijection between Nat and QProd
-2. Distributive Lattice - (QProd, prune, graft) forms a distributive lattice. All the major pieces are there, just need to show general equivalence of lattice definitions from [here](https://en.wikipedia.org/wiki/Lattice_(order)#Connection_between_the_two_definitions). 
+2. Distributive Lattice - (QProd, prune, graft) forms a distributive lattice
+3. Heyting algebra - downsets form heyting algebras. In particular, forming boolean algebras when the top element is shallow
+    
 
 
 Here's the definitions/proofs in english which is hopefully a bit more readable.
@@ -150,3 +152,6 @@ In the forwards direction, assume that $x$ is shallow. Then identify $x$ with th
 In the other direction, suppose that $x = [x_1, ..., x_n]$ is not shallow. Assume $x_1$ is strictly greater than $[]$ (there'll always be some $x_i$ like this but assuming its $x_1$ just means there's fewer ... in the proof). Thus we have an increasing chain $[[]] \sqsubset [x_1] \sqsubseteq x$.
 
 Consider $\lnot [[]] = [[]] \to []$.  By definition, $[[]] \sqcap \lnot [[]] = []$ and so $\lnot [[]] = [0, y_2, ..., y_n]$ for some $y_i$. But that means $[[]] \sqcup \lnot [[]] = [[], y_2, ..., y_n] \sqsubset [x_1, y_2, ..., y_n] \sqsubseteq x$. Therefore $[[]] \sqcup \lnot [[]] \neq x$, so $\downarrow x$ is not a Boolean algebra.
+
+
+![alt text](image.png)
