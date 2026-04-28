@@ -49,8 +49,7 @@ lemma brak_nil_graft_eq_self (xs : List RawProd) : nil ⊔ (brak xs) = brak xs :
 
 @[simp]
 lemma graft_nil_eq_self (x : RawProd) (hnz: x ≠ zero) : x ⊔ nil = x := by
-  -- how does simp not work?
-    cases x
+  cases x
     . simp only [zero_graft_eq_self, reduceCtorEq]; contradiction
     . simp only [brak_graft_nil_eq_self]
 

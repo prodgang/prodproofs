@@ -55,13 +55,6 @@ lemma pleq_head_tail_imp_pleq_cons {x y : RawProd} {xs ys : List RawProd } (h_he
   simp_all only [pleq_raw, pleq_list, and_self]
 
 
--- lemma brak_pleq_nil_allzero {xs : List RawProd} (hleq: brak xs ⊑ brak []) : allzero xs := by
---   cases xs with
---   | nil => rfl
---   | cons x xs =>
---     simp only [pleq_raw, pleq_list] at hleq
---     exact hleq
-
 
 
 
@@ -91,14 +84,11 @@ lemma brak_pleq_nil_iff_allzero {xs : List RawProd} : brak xs ⊑ nil ↔ allzer
     simp only [replicate_zero_pleq_brak]
 
 
--- Consequence of brak_pleq_nil_iff_allzero: every x ⊑ nil is zero or a brak with allzero list.
--- Used in shallow.lean to case-split on components.
 lemma pleq_nil_cases {x : RawProd} (h : x ⊑ nil) :
     x = zero ∨ ∃ ys, x = brak ys ∧ allzero ys := by
     cases x with
     | zero => left; rfl
     | brak xs => right; use xs; exact ⟨rfl, brak_pleq_nil_iff_allzero.mp h⟩
--- cases x: zero → left; brak xs → right via brak_pleq_nil_iff_allzero
 
 lemma nil_pleq_iff_ne_zero {y : RawProd} : nil ⊑ y ↔ y ≠ zero := by
   cases y with
@@ -133,21 +123,36 @@ lemma replicate_nil_pleq_iff (xs : List RawProd) (j : ℕ) :
       rw [List.replicate_succ, List.cons_append, cons_pleq_cons_iff]; simp only [get_cons_succ]
       exact ⟨fun ⟨_, ht⟩ => (ih xt).mp ht, fun h => ⟨zero_pleq, (ih xt).mpr h⟩⟩
 
--- this seems like a clumsy lemma 0 why not use allzero?
-lemma brak_pleq_replicate_zero_eq_replicate_zero {xs : List RawProd} (hpleq: ∃ n, brak xs ⊑ brak (List.replicate n zero)) : xs = List.replicate xs.length zero := by
-  induction xs with
-  | nil => simp only [List.length_nil, List.replicate_zero]
-  | cons x xs ihx =>
-    obtain ⟨n, hn⟩ := hpleq
-    induction n with
-    | zero => simp only [List.replicate_zero] at hn; exact brak_pleq_nil_iff_allzero.mp hn;
-    | succ n ihn =>
-      simp only [List.replicate_succ] at hn
-      obtain ⟨hx,hxs⟩ := cons_pleq_cons_iff.mp hn
-      simp only [List.length_cons, List.replicate_succ, List.cons.injEq]
-      constructor
-      . exact pleq_zero_eq_zero hx
-      . apply ihx; use n
+lemma allzero_of_brak_pleq_allzero {xs ys : List RawProd}
+    (hay : allzero ys) (hle : brak xs ⊑ brak ys) : allzero xs := by
+  induction xs generalizing ys with
+  | nil => exact rfl
+  | cons xh xt ih =>
+    cases ys with
+    | nil => exact brak_pleq_nil_iff_allzero.mp hle
+    | cons yh yt =>
+      obtain ⟨hyh, hyt⟩ := allzero_cons hay
+      obtain ⟨hh, ht⟩ := cons_pleq_cons_iff.mp hle
+      simp only [allzero, List.length_cons, List.replicate_succ, List.cons.injEq]
+      exact ⟨pleq_zero_eq_zero (hyh ▸ hh), ih hyt ht⟩
+
+lemma brak_pleq_brak_get {xs ys : List RawProd} (h : brak xs ⊑ brak ys) (i : ℕ) :
+    get xs i ⊑ get ys i := by
+  revert i
+  induction xs generalizing ys with
+  | nil => intro i; simp only [get_nil]; exact zero_pleq
+  | cons xh xt ih =>
+    cases ys with
+    | nil =>
+      intro i
+      rw [allzero_get_zero (brak_pleq_nil_iff_allzero.mp h)]
+      exact zero_pleq
+    | cons yh yt =>
+      intro i
+      obtain ⟨hh, ht⟩ := cons_pleq_cons_iff.mp h
+      cases i with
+      | zero => simp only [get_cons_zero]; exact hh
+      | succ j => simp only [get_cons_succ]; exact ih ht j
 
 
 
@@ -167,7 +172,7 @@ theorem pleq_raw_refl {x : RawProd }: x ⊑ x := by
 
 
 -- have to make answers equiv not equal because of [0,0] ⊑ [] but they arent literally equal
-theorem pleq_raw_antisymm {x y : RawProd} (h1 : x ⊑ y) (h2 : y ⊑ x) : x.equiv y := by --: ∀ x y, x ⊑ y → y ⊑ x → x.equiv y := by
+theorem pleq_raw_antisymm {x y : RawProd} (h1 : x ⊑ y) (h2 : y ⊑ x) : x.equiv y := by
   revert h1 h2 x y
   apply RawProd.induction_list₂
   case h_zero_left => intro y hz hy; apply pleq_zero_eq_zero at hy; simp only [equiv, normalize_zero_eq_zero, hy]
@@ -203,10 +208,8 @@ theorem pleq_transitivity {x y z : RawProd} (hxy : x ⊑ y) (hyz : y ⊑ z) : x 
     apply replicate_zero_pleq_brak
   case h_nil_right =>
     intro xs zs hl1 hl2
-    rw [brak_pleq_nil_iff_allzero.mp hl2] at hl1
-    have hxs : xs = List.replicate xs.length zero := by apply brak_pleq_replicate_zero_eq_replicate_zero; use zs.length;
-    rw [hxs]
-    apply replicate_zero_pleq_brak
+    exact brak_pleq_nil_iff_allzero.mpr
+      (allzero_of_brak_pleq_allzero (brak_pleq_nil_iff_allzero.mp hl2) hl1)
   case h_cons_cons_cons =>
       intro x y z xs ys zs hx hxs hl1 hl2
       obtain ⟨hxy, hxsys⟩ := cons_pleq_cons_iff.mp hl1
@@ -219,17 +222,15 @@ theorem pleq_transitivity {x y z : RawProd} (hxy : x ⊑ y) (hyz : y ⊑ z) : x 
 
 theorem pleq_prune_raw_iff { x y : RawProd } : x ⊑ y ↔ (x ⊓ y).equiv x := by
   constructor
-  . -- =>
-    revert x y
+  · revert x y
     apply RawProd.induction_list₂
     case h_zero_left => intro _ _ ; rw [zero_prune_eq_zero]; rfl
     case h_zero_right => intro x hx; simp only [prune_zero_eq_zero]; simp only [(pleq_zero_eq_zero hx)]; rfl
     case h_nil_left => intro _ _; rw [nil_prune_nz_eq_nil]; rfl; exact brak_neq_zero
     case h_nil_right =>
-      -- use brak xs ⊑ [] to get allzero xs and then...
       intro xs hleq
       have haz := brak_pleq_nil_iff_allzero.mp hleq
-      rw [brak_prune_nil_eq_nil, haz]
+      rw [prune_nil_eq_nil, haz]
       simp only [equiv, normalize_nil_eq_nil, normalize, equiv_zero_eq_zero, List.map_replicate, brak.injEq, List.nil_eq]
       apply trim_eq_nil_iff.mpr
       simp only [allzero, List.length_replicate]
@@ -242,8 +243,7 @@ theorem pleq_prune_raw_iff { x y : RawProd } : x ⊑ y ↔ (x ⊓ y).equiv x := 
       . simp only [prune_raw] at ht
         apply ht
         exact (cons_pleq_cons_iff.mp hcons).2
-  . -- <=
-    revert x y
+  · revert x y
     apply RawProd.induction_list₂
     case h_zero_left => intro _ _ ; exact zero_pleq
     case h_zero_right => intro x hx; simp only [prune_zero_eq_zero, equiv, normalize] at hx; rw [← zero_eq_normalize_eq_zero hx]; exact pleq_raw_refl
@@ -295,11 +295,9 @@ theorem pleq_dvd {x y : RawProd } (hnz: x ≠ zero) (hlq: x ⊑ y ): interp_raw 
     obtain ⟨hxy, hbrak⟩ := cons_pleq_cons_iff.mp h4
     obtain ⟨i, hi⟩ := prime_index hp
     rw [hi]
-    -- apply bridge lemma
     rw [factorization_interp_list_zero, factorization_interp_list_zero]
     cases i with
     | zero =>
-      -- head, wrangle h1
       simp only [get_cons_zero]
       by_cases hxz : x = zero
       · simp only [hxz, interp_raw_zero, zero_le]
@@ -307,7 +305,6 @@ theorem pleq_dvd {x y : RawProd } (hnz: x ≠ zero) (hlq: x ⊑ y ): interp_raw 
         have hynz : interp_raw y ≠ 0 := fun h => hyz (interp_raw_eq_zero_eq_zero y h)
         exact Nat.le_of_dvd (by omega) (h1 hxz hxy)
     | succ j =>
-      --tail, wrangle h2
       simp only [get_cons_succ]
       have hdvd := h2 brak_neq_zero hbrak
       simp only [interp_raw] at hdvd
@@ -389,13 +386,6 @@ lemma lift_pleq₂ {f g : RawProd → RawProd → RawProd} {F G : QProd → QPro
     (h : ∀ a b, RawProd.pleq_raw (f a b) (g a b)) :
     ∀ x y, F x y ⊑ G x y :=
   fun x y => Quotient.ind₂ (fun a b => hF a b ▸ hG a b ▸ mk_pleq_mk_iff.mpr (h a b)) x y
-
-
--- instance : PartialOrder QProd where
---   le := pleq
---   le_refl := pleq_refl
---   le_trans := pleq_transitivity
---   le_antisymm := pleq_antisymm
 
 
 lemma pleq_prune_iff {x y : QProd} : x ⊑ y ↔ x ⊓ y = x := by

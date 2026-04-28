@@ -1,12 +1,22 @@
 import Prod.raw_defs
 import Prod.quot_defs
-import Prod.misc
 import Mathlib.Data.Nat.Prime.Basic
 import Mathlib.Data.Nat.Nth
+import Mathlib.Data.Nat.PrimeFin
 import Mathlib.Algebra.GroupWithZero.Basic
 import Mathlib.Data.Nat.Factorization.Basic
 import Mathlib.Data.Nat.Prime.Nth
 import Mathlib.NumberTheory.PrimeCounting
+
+lemma prime_index {p : ℕ} (hp : Nat.Prime p) : ∃ i, p = Nat.nth Nat.Prime i := by
+  obtain ⟨i, hi⟩ := Nat.subset_range_nth hp
+  exact ⟨i, hi.symm⟩
+
+lemma prime_index_lt {i : ℕ} : i < Nat.nth Nat.Prime i := by
+  have := Nat.add_two_le_nth_prime i; omega
+
+lemma primes_distinct {n m : ℕ} (h : n ≠ m) : Nat.nth Nat.Prime n ≠ Nat.nth Nat.Prime m :=
+  fun heq => h ((Nat.nth_strictMono Nat.infinite_setOf_prime).injective heq)
 
 namespace RawProd
 
@@ -52,8 +62,7 @@ lemma interp_cons_coprime {xs : List RawProd } {i j: ℕ } (hlt : i < j) : ¬  (
           . linarith
         . exact (Nat.prime_nth_prime i)
         . exact (Nat.prime_nth_prime j)
-      . --apply (ih i) i mismatch...
-        have hlt2 : i < (j+1) := by linarith
+      . have hlt2 : i < (j+1) := by linarith
         apply (ih hlt2)
         assumption
     . exact Nat.prime_nth_prime i
@@ -62,7 +71,6 @@ lemma interp_cons_coprime {xs : List RawProd } {i j: ℕ } (hlt : i < j) : ¬  (
 
 
 /-- Adding a single zero to the end doesn't change interpretation -/
--- @[simp]
 lemma interp_list_append_zero (xs : List RawProd) (k : ℕ) :
     interp_list (xs ++ [zero]) k = interp_list xs k := by
   induction xs generalizing k with
@@ -95,7 +103,7 @@ lemma interp_allzero_eq_one {xs : List RawProd} {k : ℕ} (h : allzero xs) :
 @[aesop safe]
 lemma interp_list_eq_interp_list_trim {xs : List RawProd} {k : ℕ} :
    interp_list (trim xs) k = interp_list xs k := by
-  induction xs using List.reverseRecOn with --generalizing k with
+  induction xs using List.reverseRecOn with
   | nil => simp only [trim, List.rdropWhile_nil]
   | append_singleton ys y ih =>
     cases y

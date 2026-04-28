@@ -1,6 +1,5 @@
 import Prod.interp
 import Prod.quot_defs
-import Prod.misc
 import Mathlib.Data.Nat.Factorization.Basic
 import Mathlib.Data.Nat.Prime.Nth
 import Mathlib.Tactic.Linarith.Frontend
@@ -28,7 +27,6 @@ lemma brak_equiv_elementwise {xs ys : List RawProd}
   | cons x xs ih =>
     cases ys with
     | nil =>
-      --same as above
       simp only [equiv, normalize, List.map_nil, brak.injEq]
       simp only [trim, List.rdropWhile_nil, List.rdropWhile_eq_nil_iff, List.mem_map, beq_iff_eq, forall_exists_index, and_imp, forall_apply_eq_imp_iff₂]
       intro x hx
@@ -55,7 +53,6 @@ lemma brak_equiv_elementwise {xs ys : List RawProd}
 /-! ### Injectivity -/
 
 theorem interp_inj {x y : RawProd} : interp_raw x = interp_raw y → x.equiv y := by
-  -- Induct on size/structure of x, generalizing y
   revert y
   induction x using induction with
   | h_zero =>
@@ -71,7 +68,6 @@ theorem interp_inj {x y : RawProd} : interp_raw x = interp_raw y → x.equiv y :
     | brak ys =>
       have h_factors : ∀ i, interp_raw (get xs i) = interp_raw (get ys i) := by
         intro i
-        -- Use the Bridge Lemma!
         rw [← factorization_interp_list 0 i, ← factorization_interp_list 0 i]
         simp only [Nat.zero_add]
         simp only [interp_raw] at h
@@ -125,12 +121,9 @@ theorem interp_fromNat (n : ℕ) : interp_raw (fromNat n) = n := by
         · obtain ⟨i, hi⟩ := prime_index hp
           rw [hi]
 
-          -- Apply  the Bridge Lemma (factorization_interp_list)
           simp only [fromNat, interp_raw]
           rw [← Nat.zero_add i, factorization_interp_list 0 i]
           rw [Nat.zero_add]
-
-          -- Now we evaluate `(get xs i).interp_raw`
           simp only [Nat.succ_eq_add_one, Nat.add_assoc, one_add_one_eq_two]
           if hi_bound : i < (m+2) then
             simp only [get]
@@ -149,8 +142,7 @@ theorem interp_fromNat (n : ℕ) : interp_raw (fromNat n) = n := by
             apply Nat.factorization_eq_zero_of_lt
             grind only [!prime_index_lt]
 
-        · -- If p is not prime, both factorizations are 0
-          rw [Nat.factorization_eq_zero_of_not_prime _ hp]
+        · rw [Nat.factorization_eq_zero_of_not_prime _ hp]
           rw [Nat.factorization_eq_zero_of_not_prime _ hp]
 
 

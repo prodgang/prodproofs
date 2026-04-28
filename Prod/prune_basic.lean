@@ -1,6 +1,4 @@
 import Prod.quot_defs
--- import Mathlib.Data.List.Basic
--- import Mathlib.Data.List.Induction
 
 namespace RawProd
 
@@ -36,11 +34,6 @@ lemma prune_list_nil_left (xs : List RawProd) : prune_list [] xs = [] := by
   simp only [prune_list]
 
 @[simp]
-lemma brak_prune_nil_eq_nil {xs : List RawProd} : (brak xs) ⊓ nil = nil := by
-  -- how does simp not work?
-    simp only [prune_raw, prune_list_nil_right]
-
-@[simp]
 lemma brak_nil_prune_eq_nil (xs : List RawProd) : nil ⊓ (brak xs) = nil := by
   cases xs <;> simp only [prune_raw, prune_list_nil_right, prune_list_nil_left]
 
@@ -59,10 +52,6 @@ lemma prune_nil_eq_nil (xs : List RawProd) : (brak xs) ⊓ nil = nil := by
 lemma nil_prune_nz_eq_nil (x : RawProd) (hnx : x ≠ zero) : nil ⊓ x = nil := by
   cases x <;> simp only [prune_raw, zero_neq_brak, prune_list_nil_left]
   contradiction
-
-@[simp]
-lemma nil_prune_brak_eq_nil (xs : List RawProd)  : nil ⊓ (brak xs) = nil := by
-  cases xs <;> simp only [prune_raw, prune_list_nil_right, prune_list_nil_left]
 
 lemma brak_prune_brak_neq_zero (xs ys : List RawProd) : (brak xs) ⊓ (brak ys) ≠ zero := by
   simp only [prune_raw, ne_eq, reduceCtorEq, not_false_eq_true]
@@ -112,13 +101,11 @@ lemma allzero_prune_eq_replicate {xs ys : List RawProd} (haz : allzero xs) :
       simp only [brak.injEq] at ih
       exact ih
 
---lemma allzero_prune_allzero {xy ys : List RawProd} (haz : allzero xs) : allzero ((brak xs) ⊓ (brak ys))
-
 theorem prune_raw_idem : ∀ x : RawProd, x ⊓ x = x := by
   intro x
   induction x using RawProd.induction_list with
   | h_zero => apply prune_zero_eq_zero
-  | h_nil => apply brak_prune_nil_eq_nil
+  | h_nil => exact prune_nil_eq_nil _
   | h_cons xs ih =>
     simp_all only [prune_raw, brak.injEq, prune_list]
 
@@ -141,7 +128,7 @@ theorem prune_raw_assoc : ∀ x y z : RawProd, (x ⊓ y) ⊓ z = x ⊓ (y ⊓ z)
   case h_zero_mid => simp only [zero_prune_eq_zero, prune_zero_eq_zero, implies_true]
   case h_zero_right => simp only [prune_zero_eq_zero, implies_true]
   case h_nil_left => simp only [ne_eq, brak_prune_brak_neq_zero, not_false_eq_true, nil_prune_nz_eq_nil, brak_neq_zero, implies_true]
-  case h_nil_mid => simp only [brak_nil_prune_eq_nil, brak_prune_nil_eq_nil, implies_true]
+  case h_nil_mid => simp only [brak_nil_prune_eq_nil, prune_nil_eq_nil, implies_true]
   case h_nil_right => simp only [prune_raw, prune_list_nil_right, ne_eq, brak_neq_zero, not_false_eq_true, prune_nil_nz_eq_nil, implies_true]
   case h_cons_cons_cons =>
     intros x y z xs ys zs hx hxs
@@ -149,7 +136,6 @@ theorem prune_raw_assoc : ∀ x y z : RawProd, (x ⊓ y) ⊓ z = x ⊓ (y ⊓ z)
     exact ⟨hx, hxs⟩
 
 
--- helper to cover all nil cases below
 lemma prune_raw_trim_equiv {xs ys : List RawProd} : nil.equiv (brak xs) → nil.equiv (brak xs ⊓ brak ys) := by
   intro h1
   have haz : allzero xs := by exact nil_equiv_brak_iff_allzero.mp h1
@@ -197,14 +183,6 @@ infixl:70 " ⊓ " => prune
 
 /-- compute on `mk`ed representatives -/
 lemma prune_mk_mk (x y : RawProd) : (mk x) ⊓ (mk y) = mk (x ⊓ y) := rfl
-
-/-- basic simplification: prune zero zero = zero -/
--- lemma zero_prune_zero_eq_zero : zero ⊓ zero = zero := by
---   change prune (mk RawProd.zero) (mk RawProd.zero) = mk RawProd.zero
---   rw [prune_mk_mk]
---   simp only [prune_zero_eq_zero, mk_zero_eq_zero]
-
-
 
 theorem prune_idem : ∀ q : QProd, q ⊓ q = q := by
   apply lift_eq₁ prune_raw_idem
