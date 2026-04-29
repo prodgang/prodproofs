@@ -1,12 +1,39 @@
-import Prod.raw_defs
-import Prod.quot_defs
-import Mathlib.Data.Nat.Prime.Basic
-import Mathlib.Data.Nat.Nth
-import Mathlib.Data.Nat.PrimeFin
+/-
+Copyright (c) 2024 Edwin Agnew. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Edwin Agnew
+-/
+import ProdNum.RawDefs
+import ProdNum.QuotDefs
 import Mathlib.Algebra.GroupWithZero.Basic
 import Mathlib.Data.Nat.Factorization.Basic
+import Mathlib.Data.Nat.Nth
+import Mathlib.Data.Nat.PrimeFin
+import Mathlib.Data.Nat.Prime.Basic
 import Mathlib.Data.Nat.Prime.Nth
 import Mathlib.NumberTheory.PrimeCounting
+
+/-!
+# Productive Numbers — Interpretation
+
+Defines the interpretation `interp_raw : RawProd → ℕ` and its quotient version
+`QProd.interp : QProd → ℕ`, along with the inverse `fromNat`.
+
+The interpretation sends `brak xs` to `∏ pᵢ ^ interp_raw(xs[i])` where `pᵢ` is
+the `i`-th prime (zero-indexed).
+
+## Main definitions
+
+- `RawProd.interp_raw`, `RawProd.interp_list`: mutually recursive interpretation
+- `RawProd.fromNat`: inverse of interpretation
+- `QProd.interp`, `QProd.fromNat`: quotient-level versions
+
+## Main results
+
+- `RawProd.factorization_interp_list`: the "bridge lemma" — the exponent of the `(k+i)`-th
+  prime in `interp_list xs k` equals `interp_raw (get xs i)`
+- `RawProd.equiv_interp_eq`: equivalent raw prods have the same interpretation
+-/
 
 lemma prime_index {p : ℕ} (hp : Nat.Prime p) : ∃ i, p = Nat.nth Nat.Prime i := by
   obtain ⟨i, hi⟩ := Nat.subset_range_nth hp
@@ -19,9 +46,6 @@ lemma primes_distinct {n m : ℕ} (h : n ≠ m) : Nat.nth Nat.Prime n ≠ Nat.nt
   fun heq => h ((Nat.nth_strictMono Nat.infinite_setOf_prime).injective heq)
 
 namespace RawProd
-
-/-! ## Basic lemmas about trailing zeros -/
-
 
 mutual
 noncomputable def interp_raw: RawProd → ℕ
@@ -251,15 +275,13 @@ noncomputable def interp : QProd → ℕ :=
   Quotient.lift RawProd.interp_raw @RawProd.equiv_interp_eq
 
 
-/-! ## Additional useful properties for later proofs -/
+/-! ## QProd interpretation -/
 
 lemma interp_mk (x : RawProd) : interp (mk x) = RawProd.interp_raw x := by
   simp only [interp, mk, Quotient.lift_mk]
 
 
 noncomputable def fromNat (n : ℕ ) := mk (RawProd.fromNat n)
-
--- silly little lemmas
 
 @[simp] lemma interp_zero : interp zero = 0 := rfl
 

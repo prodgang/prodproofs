@@ -1,6 +1,28 @@
+/-
+Copyright (c) 2024 Edwin Agnew. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Edwin Agnew
+-/
 import Mathlib.Data.List.Basic
 import Mathlib.Data.List.Induction
--- import Mathlib.Tactic
+
+/-!
+# Productive Numbers — Raw Definitions
+
+Defines `RawProd`, the raw inductive type for productive numbers before taking the quotient.
+A `RawProd` is either `zero` (representing 0) or `brak xs` where `xs : List RawProd`,
+interpreted as `∏ pᵢ ^ eval(xᵢ)` where `pᵢ` is the `i`-th prime.
+
+Trailing zeros in the list do not change the value, so equality is taken up to normalization
+in `QProd` (defined in `Quot`).
+
+## Main definitions
+
+- `RawProd`: the raw inductive type
+- `RawProd.get`: safe list accessor, defaulting to `zero`
+- `RawProd.induction`, `induction_list`, `induction₂`, etc.: induction principles
+- `DecidableEq RawProd`: via mutual structural recursion
+-/
 
 /-- Raw productive numbers before quotient -/
 inductive RawProd where
@@ -14,10 +36,10 @@ namespace RawProd
 abbrev nil : RawProd := brak []
 
 @[simp]
-lemma zero_neq_brak {xs : List RawProd} : zero ≠ brak xs := by simp only [ne_eq, reduceCtorEq, not_false_eq_true]
+lemma zero_ne_brak {xs : List RawProd} : zero ≠ brak xs := by simp only [ne_eq, reduceCtorEq, not_false_eq_true]
 
 @[simp]
-lemma brak_neq_zero {xs : List RawProd} : brak xs ≠ zero := by simp only [ne_eq, reduceCtorEq, not_false_eq_true]
+lemma brak_ne_zero {xs : List RawProd} : brak xs ≠ zero := by simp only [ne_eq, reduceCtorEq, not_false_eq_true]
 
 /-- Access the i-th element of a list, defaulting to zero. -/
 def get (xs : List RawProd) (i : ℕ) : RawProd := xs.getD i zero
@@ -43,8 +65,8 @@ lemma get_replicate_nil_pos (j : ℕ) :
 mutual
   def decEqRaw : (a b : RawProd) → Decidable (a = b)
     | .zero,    .zero   => isTrue rfl
-    | .zero,    .brak _ => isFalse (by simp only [zero_neq_brak, not_false_eq_true])
-    | .brak _,  .zero   => isFalse (by simp only [brak_neq_zero, not_false_eq_true])
+    | .zero,    .brak _ => isFalse (by simp only [zero_ne_brak, not_false_eq_true])
+    | .brak _,  .zero   => isFalse (by simp only [brak_ne_zero, not_false_eq_true])
     | .brak xs, .brak ys =>
       match decEqList xs ys with
       | isTrue h  => isTrue (congrArg RawProd.brak h)
@@ -113,7 +135,6 @@ theorem induction₂
       exact ih_x x' hx y'
 
 
--- basically same as above but saves me typing out the list inductions each time and remembering what to generalize
 theorem induction_list₂
  {P : RawProd → RawProd → Prop}
   (h_zero_left  : ∀ y,                 P zero      y)
@@ -143,7 +164,6 @@ theorem induction_list₂
           . exact (hx _)
           . exact (hxs _)
 
--- tedious but easy
 theorem induction_list₃
  {P : RawProd → RawProd → RawProd → Prop}
   (h_zero_left  : ∀ y z, P zero y z)
@@ -182,7 +202,6 @@ theorem induction_list₃
               . exact hx _ _
               . exact hxs _ _
 
--- useful for lifting binary ops (or is it?)
 theorem induction_list₄
  {P : RawProd → RawProd → RawProd → RawProd → Prop}
   (h_zero1  : ∀ x y z, P zero x y z)

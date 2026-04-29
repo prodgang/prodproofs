@@ -1,7 +1,30 @@
-import Prod.shallow
-import Prod.heyting
+/-
+Copyright (c) 2024 Edwin Agnew. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Edwin Agnew
+-/
+import ProdNum.Shallow
+import ProdNum.Heyting
 import Mathlib.Order.BooleanAlgebra.Defs
 import Mathlib.Data.Finset.BooleanAlgebra
+
+/-!
+# Productive Numbers — Boolean Algebra on Non-Zero Downsets
+
+For a non-zero `x : QProd`, the non-zero principal downset
+`NonZeroDownset x = {y : QProd | 0 < y ∧ y ≤ x}` carries a Boolean algebra structure
+if and only if `x` is shallow.
+
+## Main definitions
+
+- `RawProd.compl_list`: componentwise complement relative to a bound list
+- `QProd.NonZeroDownset`: the non-zero principal downset type
+
+## Main results
+
+- `instance : BooleanAlgebra (NonZeroDownset x)` (when `x` is shallow)
+- `shallow_of_nzd_complemented`: converse — if the downset has complements, then `x` is shallow
+-/
 
 namespace RawProd
 
@@ -28,7 +51,7 @@ lemma brak_compl_list_pleq (xs ys : List RawProd) : brak (compl_list xs ys) ⊑ 
       constructor
       · cases yh
         · simp only [ite_true]; exact pleq_raw_refl
-        · simp only [brak_neq_zero, ite_false]; exact zero_pleq
+        · simp only [brak_ne_zero, ite_false]; exact zero_pleq
       · apply ih
 
 lemma prune_compl_list_allzero (xs ys : List RawProd) :
@@ -43,8 +66,8 @@ lemma prune_compl_list_allzero (xs ys : List RawProd) :
       rw [allzero, List.length_cons, List.replicate_succ, List.cons.injEq]
       refine ⟨?_, ih xt⟩
       split_ifs with h
-      · simp only [h, zero_prune_eq_zero]
-      · simp only [prune_zero_eq_zero]
+      · simp only [h, zero_prune]
+      · simp only [prune_zero]
 
 lemma graft_compl_list_equiv_xs {xs ys : List RawProd} (hs : shallow xs)
     (hle : brak ys ⊑ brak xs) :
@@ -62,8 +85,8 @@ lemma graft_compl_list_equiv_xs {xs ys : List RawProd} (hs : shallow xs)
       obtain ⟨hh, ht⟩ := cons_pleq_cons_iff.mp hle
       refine cons_equiv_cons_iff.mp ⟨?_, ih hs2 ht⟩
       split_ifs with h
-      · simp only [equiv_refl, h, equiv_zero_eq_zero, zero_graft_eq_self]
-      · rw [graft_zero_eq_self]
+      · simp only [equiv_refl, h, equiv_zero_eq_zero, zero_graft]
+      · rw [graft_zero]
         have hxh_nil : xh ⊑ nil := by
           have := shallow_iff_pleq_nil.mp hs 0; rwa [get_cons_zero] at this
         exact equiv_trans (pleq_nil_equiv_nil (pleq_transitivity hh hxh_nil) h)
@@ -77,9 +100,9 @@ namespace QProd
 
 open RawProd
 
--- ---------------------------------------------------------------------------
--- NonZeroDownset and its canonical Lattice
--- ---------------------------------------------------------------------------
+
+/-! ### NonZeroDownset and its lattice structure -/
+
 
 def NonZeroDownset (x : QProd) := {y : QProd // nil ≤ y ∧ y ≤ x}
 
@@ -111,9 +134,9 @@ def NonZeroDownset (x : QProd) := {y : QProd // nil ≤ y ∧ y ≤ x}
     simp only [nzd_coe_inf, nzd_coe_sup]
     exact QProd.distrib a.val b.val c.val
 
--- ---------------------------------------------------------------------------
--- Auxiliary facts
--- ---------------------------------------------------------------------------
+
+/-! ### Auxiliary facts -/
+
 
 lemma shallow_nil_le {x : QProd} (hx : shallow x) : nil ≤ x := by
   obtain ⟨xs, hxrep, _⟩ := shallow_exists_brak_rep hx
@@ -137,9 +160,9 @@ private lemma pleq_of_rep_le {xs ys : List RawProd} {a x : QProd}
   have h' := pleq_iff_le.mpr h
   rwa [eq_mk_brak_of_rep ha, eq_mk_brak_of_rep hx, mk_pleq_mk_iff] at h'
 
--- ---------------------------------------------------------------------------
--- BoundedOrder and complement
--- ---------------------------------------------------------------------------
+
+/-! ### Bounded order and complement -/
+
 
 private instance nzd_boundedOrder (x : QProd) (hx : shallow x) : BoundedOrder (NonZeroDownset x) where
   top    := ⟨x, ⟨shallow_nil_le hx, le_refl x⟩⟩
@@ -164,9 +187,9 @@ private instance nzd_compl (x : QProd) (hx : shallow x) : Compl (NonZeroDownset 
     rw [compl_fn_eq xs hxrep a ys harep, eq_mk_brak_of_rep hxrep]
     exact ⟨le_of_mk_pleq nil_pleq_brak, le_of_mk_pleq (brak_compl_list_pleq xs ys)⟩⟩⟩
 
--- ---------------------------------------------------------------------------
--- Forward direction: BooleanAlgebra from shallow
--- ---------------------------------------------------------------------------
+
+/-! ### Forward direction: Boolean algebra from shallowness -/
+
 
 instance (x : QProd) (hx : shallow x) : BooleanAlgebra (NonZeroDownset x) := by
   letI := nzd_distribLattice x
@@ -196,9 +219,9 @@ instance (x : QProd) (hx : shallow x) : BooleanAlgebra (NonZeroDownset x) := by
     sdiff_eq := fun _ _ => rfl
     himp_eq  := fun _ _ => rfl }
 
--- ---------------------------------------------------------------------------
--- Backward direction: BooleanAlgebra on NonZeroDownset x implies x is shallow
--- ---------------------------------------------------------------------------
+
+/-! ### Backward direction: shallowness from Boolean algebra -/
+
 
 def singleton_j (j : ℕ) : QProd :=
   mk (brak (List.replicate j RawProd.zero ++ [RawProd.nil]))
@@ -253,7 +276,7 @@ theorem shallow_of_nzd_complemented (x : QProd)
       rw [← nzd_coe_sup, h_sup]; exact htop_x
     rw [hev, hcv, graft_mk_mk, eq_mk_brak_of_rep hxrep] at hgraft; simp only [graft_raw] at hgraft
     have heq := brak_equiv_get_equiv (Quotient.exact hgraft) i
-    rw [get_graft_list, get_replicate_nil_pos, hci_zero, graft_zero_eq_self] at heq
+    rw [get_graft_list, get_replicate_nil_pos, hci_zero, graft_zero] at heq
     exact heq.symm
   cases hget : get xs i with
   | zero    => exact zero_pleq

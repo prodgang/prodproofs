@@ -1,13 +1,28 @@
-import Prod.interp
-import Prod.quot_defs
+/-
+Copyright (c) 2024 Edwin Agnew. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Edwin Agnew
+-/
+import ProdNum.Interp
+import ProdNum.QuotDefs
 import Mathlib.Data.Nat.Factorization.Basic
 import Mathlib.Data.Nat.Prime.Nth
-import Mathlib.Tactic.Linarith.Frontend
 import Mathlib.NumberTheory.PrimeCounting
+import Mathlib.Tactic.Linarith.Frontend
+
+/-!
+# Productive Numbers — Bijectivity of Interpretation
+
+Proves that `QProd.interp : QProd → ℕ` is a bijection.
+
+## Main results
+
+- `RawProd.interp_inj`: `interp_raw x = interp_raw y → x.equiv y`
+- `RawProd.interp_fromNat`: `interp_raw (fromNat n) = n`
+- `QProd.interp_bijective`: `Function.Bijective QProd.interp`
+-/
 
 namespace RawProd
-
-/-! ### Injectivity -/
 
 lemma brak_equiv_elementwise {xs ys : List RawProd}
     (h : ∀ i, (get xs i).equiv (get ys i)) : (brak xs).equiv (brak ys) := by
@@ -16,7 +31,7 @@ lemma brak_equiv_elementwise {xs ys : List RawProd}
     simp only [equiv, normalize, List.map_nil, brak.injEq]
     simp only [trim, List.rdropWhile_nil, List.nil_eq, List.rdropWhile_eq_nil_iff, List.mem_map, beq_iff_eq, forall_exists_index, and_imp, forall_apply_eq_imp_iff₂]
     intro y hy
-    suffices hyz : y = zero by rw [hyz, normalize_zero_eq_zero]
+    suffices hyz : y = zero by rw [hyz, normalize_zero]
     obtain ⟨n, hn⟩ := (List.mem_iff_get.mp hy)
     specialize h n
     simp only [get, List.getD_nil] at h
@@ -30,7 +45,7 @@ lemma brak_equiv_elementwise {xs ys : List RawProd}
       simp only [equiv, normalize, List.map_nil, brak.injEq]
       simp only [trim, List.rdropWhile_nil, List.rdropWhile_eq_nil_iff, List.mem_map, beq_iff_eq, forall_exists_index, and_imp, forall_apply_eq_imp_iff₂]
       intro x hx
-      suffices hxz : x = zero by rw [hxz, normalize_zero_eq_zero]
+      suffices hxz : x = zero by rw [hxz, normalize_zero]
       obtain ⟨n, hn⟩ := (List.mem_iff_get.mp hx)
       specialize h n
       simp only [get, List.getD_nil] at h

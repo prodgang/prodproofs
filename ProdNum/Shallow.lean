@@ -1,10 +1,25 @@
-import Prod.poset
+/-
+Copyright (c) 2024 Edwin Agnew. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Edwin Agnew
+-/
+import ProdNum.Poset
 
 /-!
-## Shallow productive numbers
+# Productive Numbers — Shallow Elements
 
 A list `xs : List RawProd` is **shallow** if every element is either `zero` or equivalent
-to `nil = brak []`. Productive analogue of square-free natural numbers.
+to `nil = brak []`. This is the productive analogue of square-free natural numbers.
+
+## Main definitions
+
+- `RawProd.shallow`: predicate on lists
+- `QProd.shallow`: predicate on `QProd` (via representative)
+
+## Main results
+
+- `shallow_iff_pleq_nil`: `shallow xs ↔ ∀ i, get xs i ⊑ nil`
+- `pleq_shallow`: shallowness is downward closed
 -/
 
 namespace RawProd

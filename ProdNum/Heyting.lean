@@ -1,13 +1,30 @@
-import Prod.poset
-import Prod.lattice
+/-
+Copyright (c) 2024 Edwin Agnew. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Edwin Agnew
+-/
+import ProdNum.Poset
+import ProdNum.Lattice
 import Mathlib.Order.Sublattice
 import Mathlib.Order.Heyting.Basic
 
 /-!
-## Heyting algebra on principal downsets
+# Productive Numbers — Heyting Algebra on Principal Downsets
 
-`instance (x : QProd) : HeytingAlgebra (Downset x)`
-where `Downset x = {y : QProd | y ≤ x}`.
+For any `x : QProd`, the principal downset `Downset x = {y : QProd | y ≤ x}` carries
+a Heyting algebra structure.
+
+## Main definitions
+
+- `RawProd.himp_raw`, `RawProd.himp_list`: Heyting implication relative to a bound
+- `QProd.Downset`: the principal downset type `{y | y ≤ x}`
+- `QProd.himp_Downset`: Heyting implication on `Downset x`
+
+## Main results
+
+- `himp_raw_pleq_bound`: `himp_raw x a b ⊑ x`
+- `himp_raw_adjunction`: `a ⊑ x → (a ⊑ himp_raw x b c ↔ a ⊓ b ⊑ c)`
+- `instance (x : QProd) : HeytingAlgebra (Downset x)`
 -/
 
 namespace RawProd
@@ -82,18 +99,18 @@ lemma himp_raw_adjunction {x a b c : RawProd} (ha : a ⊑ x) :
   case h_zero =>
     intro a b c ha
     rw [pleq_zero_eq_zero ha]
-    simp only [himp_raw, zero_pleq, zero_prune_eq_zero]
+    simp only [himp_raw, zero_pleq, zero_prune]
   case h_nil =>
     intro a b c ha
     cases a <;> cases b <;> cases c
-    all_goals simp only [himp_raw, zero_pleq, prune_zero_eq_zero, zero_prune_eq_zero,
+    all_goals simp only [himp_raw, zero_pleq, prune_zero, zero_prune,
       iff_true]
     · exact ha
     · exact ha
     · rename_i as bs
       constructor
       · intro h; simp only [pleq_raw] at h
-      · intro h; exact absurd (pleq_zero_eq_zero h) (brak_prune_brak_neq_zero _ _)
+      · intro h; exact absurd (pleq_zero_eq_zero h) (brak_prune_brak_ne_zero _ _)
     · rename_i as bs cs
       constructor
       · intro _
@@ -105,22 +122,22 @@ lemma himp_raw_adjunction {x a b c : RawProd} (ha : a ⊑ x) :
   case h_cons xh xs ih_head ih_tail =>
     intro a b c ha
     cases a with
-    | zero => simp only [himp_raw, zero_pleq, zero_prune_eq_zero]
+    | zero => simp only [himp_raw, zero_pleq, zero_prune]
     | brak as =>
       cases b with
-      | zero => simp only [himp_raw, prune_zero_eq_zero, zero_pleq, iff_true]; exact ha
+      | zero => simp only [himp_raw, prune_zero, zero_pleq, iff_true]; exact ha
       | brak bs =>
         cases c with
         | zero =>
           simp only [himp_raw]
           constructor
           · intro h; simp only [pleq_raw] at h
-          · intro h; exact absurd (pleq_zero_eq_zero h) (brak_prune_brak_neq_zero _ _)
+          · intro h; exact absurd (pleq_zero_eq_zero h) (brak_prune_brak_ne_zero _ _)
         | brak cs =>
           simp only [himp_raw, himp_list]
           cases as with
           | nil =>
-            simp only [nil_pleq_brak, ne_eq, brak_neq_zero, not_false_eq_true, nil_prune_nz_eq_nil]
+            simp only [nil_pleq_brak, ne_eq, brak_ne_zero, not_false_eq_true, nil_prune_nz_eq_nil]
           | cons ah at_ =>
             obtain ⟨ha_head, ha_tail⟩ := cons_pleq_cons_iff.mp ha
             have iff_head := ih_head ah (get bs 0) (get cs 0) ha_head
@@ -132,8 +149,8 @@ lemma himp_raw_adjunction {x a b c : RawProd} (ha : a ⊑ x) :
                 exact nil_pleq_brak
               . intro _
                 apply cons_pleq_cons_iff.mpr
-                simp only [get_nil, prune_zero_eq_zero, zero_pleq, iff_true] at iff_head
-                simp only [List.tail_nil, ne_eq, brak_neq_zero, not_false_eq_true, prune_nil_nz_eq_nil, nil_pleq_brak, iff_true] at iff_tail
+                simp only [get_nil, prune_zero, zero_pleq, iff_true] at iff_head
+                simp only [List.tail_nil, ne_eq, brak_ne_zero, not_false_eq_true, prune_nil_nz_eq_nil, nil_pleq_brak, iff_true] at iff_tail
                 exact ⟨iff_head, iff_tail⟩
             | cons bh bt =>
               cases cs with

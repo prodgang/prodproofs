@@ -1,25 +1,41 @@
-import Prod.raw_defs
+/-
+Copyright (c) 2024 Edwin Agnew. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Edwin Agnew
+-/
+import ProdNum.RawDefs
 import Init.Data.List.Basic
 import Mathlib.Data.List.DropRight
 import Mathlib.Data.Quot
 
+/-!
+# Productive Numbers — Normalization and Quotient
+
+Defines the normalization pipeline for `RawProd` and the quotient type `QProd`.
+
+## Main definitions
+
+- `RawProd.trim`: removes trailing `zero`s from a list
+- `RawProd.normalize`: recursively trims a `RawProd`
+- `RawProd.equiv`: setoid on `RawProd`, defined as `normalize x = normalize y`
+- `QProd`: the quotient `RawProd / equiv`
+- `QProd.mk`, `QProd.rep`, `QProd.ofList`, `QProd.induction`: basic API
+- `QProd.lift_eq₁`, `lift_eq₂`, `lift_eq₃`: lifting API for QProd equalities
+-/
+
 namespace RawProd
 
-/- misc prelim lemmas -/
-lemma append_eq_imp_eq_eq {xs ys : List RawProd} {x y : RawProd} (h1 : xs = ys) (h2: x = y) : xs.append [x] = ys.append [y] := by
-  subst h2 h1
-  simp_all only [List.append_eq]
+private lemma append_eq_imp_eq_eq {xs ys : List RawProd} {x y : RawProd}
+    (h1 : xs = ys) (h2 : x = y) : xs.append [x] = ys.append [y] := by
+  subst h2 h1; simp_all only [List.append_eq]
 
 
-
-
-
-/- trim -/
+/-! ### Trim -/
 def trim (xs : List RawProd) : List RawProd := xs.rdropWhile (. == zero)
 
 
 
-lemma trim_nil_eq_nil : trim [] = [] := by simp only [trim, List.rdropWhile_nil]
+lemma trim_nil : trim [] = [] := by simp only [trim, List.rdropWhile_nil]
 
 lemma trim_append_brak_eq_self (xs ys: List RawProd): trim ( xs ++  [brak ys]) = xs ++ [brak ys] := by
   simp only [trim, beq_iff_eq, reduceCtorEq, not_false_eq_true, List.rdropWhile_concat_neg]
@@ -27,7 +43,7 @@ lemma trim_append_brak_eq_self (xs ys: List RawProd): trim ( xs ++  [brak ys]) =
 
 lemma trim_replicate_zero_eq_nil {n : ℕ } : trim (List.replicate n zero) = [] := by
   induction n with
-  | zero => simp only [List.replicate_zero, trim_nil_eq_nil]
+  | zero => simp only [List.replicate_zero, trim_nil]
   | succ n ih => simp only [trim, List.rdropWhile_eq_nil_iff, List.mem_replicate, ne_eq,
     Nat.add_eq_zero_iff, Nat.succ_ne_self, and_false, not_false_eq_true, true_and, beq_iff_eq,
     imp_self, implies_true]
@@ -47,45 +63,44 @@ lemma trim_append_brak_neq_nil (xs ys : List RawProd) : trim (xs ++ [brak ys]) �
     List.append_eq_nil_iff, List.cons_ne_self, and_false]
 
 
-/- normalize -/
+/-! ### Normalize -/
 
 /-- Recursively normalize a RawProd by removing trailing zeros at all levels -/
 def normalize : RawProd → RawProd
   | zero => zero
   | brak xs => brak (trim (List.map normalize xs))
 
-lemma normalize_zero_eq_zero : normalize zero = zero := by simp only [normalize]
+lemma normalize_zero : normalize zero = zero := by simp only [normalize]
 
 @[simp]
-lemma normalize_nil_eq_nil : normalize nil = nil := by simp only [normalize, List.map_nil, trim_nil_eq_nil]
+lemma normalize_nil : normalize nil = nil := by simp only [normalize, List.map_nil, trim_nil]
 
-lemma normalize_brak_neq_zero (xs : List RawProd) : normalize (brak xs) ≠ zero := by simp only [normalize, ne_eq, reduceCtorEq, not_false_eq_true]
+lemma normalize_brak_ne_zero (xs : List RawProd) : normalize (brak xs) ≠ zero := by simp only [normalize, ne_eq, reduceCtorEq, not_false_eq_true]
 
 
 lemma zero_eq_normalize_eq_zero {x : RawProd} (heqz : zero = x.normalize ) : x = zero := by
-  cases x <;> simp_all only [normalize, normalize_zero_eq_zero, reduceCtorEq]
+  cases x <;> simp_all only [normalize, normalize_zero, reduceCtorEq]
 
 lemma normalize_eq_zero_eq_zero {x : RawProd} (heqz : x.normalize = zero ) : x = zero := by
-  cases x <;> simp_all only [normalize, normalize_zero_eq_zero, reduceCtorEq]
+  cases x <;> simp_all only [normalize, normalize_zero, reduceCtorEq]
 
 
 lemma normalize_idem (x : RawProd) : normalize (normalize x) = normalize x := by
   induction x using RawProd.induction with
-  | h_zero => simp only [normalize_zero_eq_zero]
+  | h_zero => simp only [normalize_zero]
   | h_brak xs ih =>
     induction xs using List.reverseRecOn with
-    | nil => simp only [normalize, List.map_nil, trim_nil_eq_nil]
+    | nil => simp only [normalize, List.map_nil, trim_nil]
     | append_singleton xx x ihxx =>
       simp_all [normalize]
       cases x
-      case zero => simp_all only [trim, normalize_zero_eq_zero, BEq.rfl, List.rdropWhile_concat_pos];
+      case zero => simp_all only [trim, normalize_zero, BEq.rfl, List.rdropWhile_concat_pos];
       case brak xx' =>
         simp_all only [normalize, trim_append_brak_eq_self, List.map_append, List.map_map, List.map_cons, List.map_nil]
         rw [← List.append_eq, ← List.append_eq]
         apply append_eq_imp_eq_eq
-        . simp only [List.map_inj_left, Function.comp_apply]; intro a ha; apply ih; left; exact ha
-        . -- could be cleaner but does the job
-          have hxx : (brak xx').normalize.normalize = (brak xx').normalize := by apply ih; right; rfl
+        · simp only [List.map_inj_left, Function.comp_apply]; intro a ha; apply ih; left; exact ha
+        · have hxx : (brak xx').normalize.normalize = (brak xx').normalize := by apply ih; right; rfl
           simp only [normalize] at hxx
           exact hxx
 
@@ -93,7 +108,7 @@ lemma normalize_idem (x : RawProd) : normalize (normalize x) = normalize x := by
 
 
 
-/- equiv -/
+/-! ### Equivalence relation -/
 
 def equiv (x y : RawProd) : Prop :=
   normalize x = normalize y
@@ -111,18 +126,10 @@ theorem equiv_trans {x y z : RawProd }: equiv x y → equiv y z → equiv x z :=
   intro h1 h2
   cases x <;> cases y <;> cases z <;> simp_all only [equiv]
 
-  /-- Setoid instance for productive numbers -/
+/-- Setoid instance for productive numbers -/
 instance : Setoid RawProd where
   r := equiv
   iseqv := ⟨@equiv_refl, @equiv_symm, @equiv_trans⟩
-
-
-
---  lemma not_brak_equiv_zero (xs : List RawProd) : ¬ (brak xs).equiv zero := by
---   simp only [equiv, normalize_zero_eq_zero, normalize_brak_neq_zero, not_false_eq_true]
-
---  lemma not_zero_equiv_brak (xs : List RawProd) : ¬ zero.equiv (brak xs) := by
---   simp only [equiv, normalize_zero_eq_zero, normalize, reduceCtorEq, not_false_eq_true]
 
 
 @[simp]
@@ -159,7 +166,7 @@ lemma brak_map_normalize (xs : List RawProd) :
 
 
 
-/- allzero -/
+/-! ### All-zero lists -/
 
 def allzero (xs : List RawProd ): Prop := xs = List.replicate xs.length zero
 
@@ -169,9 +176,6 @@ instance decidable_allzero (xs : List RawProd) [DecidableEq RawProd] :
   infer_instance
 
 
--- lemma allzero_nil : allzero [] := by simp only [allzero, List.length_nil, List.replicate_zero]
-
-/-alternative definition-/
 lemma allzero_iff {xs : List RawProd} : allzero xs ↔ ∀ x ∈ xs, x = zero := by
   simp only [allzero]
   constructor
@@ -219,7 +223,7 @@ lemma allzero_get_zero {xs : List RawProd} (h : allzero xs) (i : ℕ) : get xs i
 
 lemma trim_eq_nil_iff {xs : List RawProd} : trim xs = [] ↔ RawProd.allzero xs := by
   induction xs using List.reverseRecOn with
-  | nil => simp only [allzero, trim_nil_eq_nil, List.length_nil, List.replicate_zero]
+  | nil => simp only [allzero, trim_nil, List.length_nil, List.replicate_zero]
   | append_singleton ys y ih =>
     constructor
     . intro htrim
@@ -245,14 +249,13 @@ lemma trim_allzero_eq_nil {xs : List RawProd } (hz : allzero xs) : trim xs = [] 
 
 
 
-/- (hopefully) the reverse induction to end them all -/
 lemma trim_cons {x : RawProd} {xs : List RawProd} : trim (x::xs) = if (allzero (x::xs)) then [] else x :: trim xs := by
   split_ifs
   case pos hpos => exact trim_eq_nil_iff.mpr hpos
   case neg hneg =>
     induction xs using List.reverseRecOn with
     | nil =>
-      rw [trim_nil_eq_nil]
+      rw [trim_nil]
       simp only [trim, List.rdropWhile_eq_self_iff, ne_eq, List.cons_ne_self, not_false_eq_true, List.getLast_singleton, beq_iff_eq, forall_const]
       simp only [allzero, List.length_cons, List.length_nil, Nat.zero_add, List.replicate_one, List.cons.injEq, and_true] at hneg
       exact hneg
@@ -270,7 +273,6 @@ lemma trim_cons {x : RawProd} {xs : List RawProd} : trim (x::xs) = if (allzero (
 
 
 
--- If two lists have the same trim, prepending the same element gives the same trim.
 lemma trim_cons_congr (a : RawProd) {as bs : List RawProd}
     (h : trim as = trim bs) : trim (a :: as) = trim (a :: bs) := by
   simp only [trim_cons]
@@ -304,7 +306,7 @@ constructor
     simp_all only [List.cons.injEq, and_self]
 
 lemma brak_equiv_nil_iff_allzero {xs : List RawProd} : (brak xs).equiv nil ↔ allzero xs := by
-  simp only [equiv, normalize, List.map_nil, trim_nil_eq_nil, brak.injEq]
+  simp only [equiv, normalize, List.map_nil, trim_nil, brak.injEq]
   rw [trim_eq_nil_iff]
   simp only [allzero_iff, List.mem_map, forall_exists_index, and_imp]
   constructor
@@ -312,7 +314,7 @@ lemma brak_equiv_nil_iff_allzero {xs : List RawProd} : (brak xs).equiv nil ↔ a
     exact normalize_eq_zero_eq_zero (h (normalize x) x hx rfl)
   · intro h x y hy hyx
     subst hyx
-    rw [h y hy, normalize_zero_eq_zero]
+    rw [h y hy, normalize_zero]
 
 
 lemma nil_equiv_brak_iff_allzero {xs : List RawProd} : nil.equiv (brak xs) ↔ allzero xs := by
@@ -379,7 +381,6 @@ theorem induction {P : QProd → Prop}
 
 @[simp]
 lemma mk_rep_eq {q : QProd} : mk (rep q) = q := by
-  -- reduce to the mk-a case
   revert q
   apply Quotient.ind
   intro a
