@@ -8,13 +8,13 @@ import ProdNum.Poset
 /-!
 # Productive Numbers — Shallow Elements
 
-A list `xs : List RawProd` is **shallow** if every element is either `zero` or equivalent
+A list `xs : List PreProdNum` is **shallow** if every element is either `zero` or equivalent
 to `nil = brak []`. This is the productive analogue of square-free natural numbers.
 
 ## Main definitions
 
-- `RawProd.shallow`: predicate on lists
-- `QProd.shallow`: predicate on `QProd` (via representative)
+- `PreProdNum.shallow`: predicate on lists
+- `ProdNum.shallow`: predicate on `ProdNum` (via representative)
 
 ## Main results
 
@@ -22,29 +22,19 @@ to `nil = brak []`. This is the productive analogue of square-free natural numbe
 - `pleq_shallow`: shallowness is downward closed
 -/
 
-namespace RawProd
+namespace PreProdNum
 
-def shallow : List RawProd → Prop
+def shallow : List PreProdNum → Prop
   | []      => True
   | x :: xs => (x = zero ∨ ∃ ys, x = brak ys ∧ allzero ys) ∧ shallow xs
 
 lemma shallow_nil : shallow [] := by simp only [shallow]
 
-lemma shallow_cons_iff {x : RawProd} {xs : List RawProd} : shallow (x::xs) ↔ (x = zero ∨ ∃ ys, x = brak ys ∧ allzero ys) ∧ shallow xs := by
+lemma shallow_cons_iff {x : PreProdNum} {xs : List PreProdNum} : shallow (x::xs) ↔ (x = zero ∨ ∃ ys, x = brak ys ∧ allzero ys) ∧ shallow xs := by
   simp only [shallow]
 
 
-lemma allzero_shallow {xs : List RawProd} (hs : allzero xs) : shallow xs := by
-  induction xs with
-  | nil => simp only [shallow]
-  | cons xh xt ih =>
-    obtain ⟨h1, h2⟩ := allzero_cons hs
-    simp only [shallow]
-    constructor
-    . left; exact h1
-    . exact ih h2
-
-lemma shallow_iff_pleq_nil {xs : List RawProd} :
+lemma shallow_iff_pleq_nil {xs : List PreProdNum} :
     shallow xs ↔ ∀ i, get xs i ⊑ nil := by
       induction xs with
       | nil => constructor; intro h i; rw [get_nil]; exact zero_pleq; intro _; exact shallow_nil
@@ -66,32 +56,30 @@ lemma shallow_iff_pleq_nil {xs : List RawProd} :
             rwa [get_cons_succ] at this
 
 
-lemma pleq_shallow {xs ys : List RawProd}
+lemma pleq_shallow {xs ys : List PreProdNum}
     (hs : shallow ys) (hle : brak xs ⊑ brak ys) : shallow xs :=
   shallow_iff_pleq_nil.mpr fun i =>
     pleq_transitivity (brak_pleq_brak_get hle i) (shallow_iff_pleq_nil.mp hs i)
 
 
 
-end RawProd
+end PreProdNum
 
-namespace QProd
+namespace ProdNum
 
-open RawProd
-
-/-- `x` is shallow if its representative list is shallow. False for QProd.zero
-    (since zero.rep = RawProd.zero, which is not brak-form). -/
-def shallow (x : QProd) : Prop :=
+/-- `x` is shallow if its representative list is shallow. False for ProdNum.zero
+    (since zero.rep = PreProdNum.zero, which is not brak-form). -/
+def shallow (x : ProdNum) : Prop :=
   match x.rep with
-  | RawProd.zero    => False
-  | RawProd.brak xs => RawProd.shallow xs
+  | PreProdNum.zero    => False
+  | PreProdNum.brak xs => PreProdNum.shallow xs
 
 /-- A shallow `x` has representative `brak xs` for some shallow `xs`. -/
-lemma shallow_exists_brak_rep {x : QProd} (hx : shallow x) :
-    ∃ xs, x.rep = brak xs ∧ RawProd.shallow xs := by
+lemma shallow_exists_brak_rep {x : ProdNum} (hx : shallow x) :
+    ∃ xs, x.rep = PreProdNum.brak xs ∧ PreProdNum.shallow xs := by
   cases hrep : x.rep with
-  | zero    => simp only [QProd.shallow, hrep] at hx
-  | brak xs => exact ⟨xs, rfl, by rwa [QProd.shallow, hrep] at hx⟩
+  | zero    => simp only [ProdNum.shallow, hrep] at hx
+  | brak xs => exact ⟨xs, rfl, by rwa [ProdNum.shallow, hrep] at hx⟩
 
 
-end QProd
+end ProdNum

@@ -7,52 +7,52 @@ import Mathlib.Data.List.Basic
 import Mathlib.Data.List.Induction
 
 /-!
-# Productive Numbers — Raw Definitions
+# Productive Numbers — Pre-Quotient Definitions
 
-Defines `RawProd`, the raw inductive type for productive numbers before taking the quotient.
-A `RawProd` is either `zero` (representing 0) or `brak xs` where `xs : List RawProd`,
+Defines `PreProdNum`, the inductive type for productive numbers before taking the quotient.
+A `PreProdNum` is either `zero` (representing 0) or `brak xs` where `xs : List PreProdNum`,
 interpreted as `∏ pᵢ ^ eval(xᵢ)` where `pᵢ` is the `i`-th prime.
 
 Trailing zeros in the list do not change the value, so equality is taken up to normalization
-in `QProd` (defined in `Quot`).
+in `ProdNum` (defined in `Quot`).
 
 ## Main definitions
 
-- `RawProd`: the raw inductive type
-- `RawProd.get`: safe list accessor, defaulting to `zero`
-- `RawProd.induction`, `induction_list`, `induction₂`, etc.: induction principles
-- `DecidableEq RawProd`: via mutual structural recursion
+- `PreProdNum`: the pre-quotient inductive type
+- `PreProdNum.get`: safe list accessor, defaulting to `zero`
+- `PreProdNum.induction`, `induction_list`, `induction₂`, etc.: induction principles
+- `DecidableEq PreProdNum`: via mutual structural recursion
 -/
 
-/-- Raw productive numbers before quotient -/
-inductive RawProd where
-  | zero : RawProd
-  | brak : List RawProd → RawProd
+/-- Productive numbers before quotienting by trailing-zero equivalence -/
+inductive PreProdNum where
+  | zero : PreProdNum
+  | brak : List PreProdNum → PreProdNum
   deriving Repr
 
-namespace RawProd
+namespace PreProdNum
 
-/-- The minimum non-zero RawProd element. -/
-abbrev nil : RawProd := brak []
-
-@[simp]
-lemma zero_ne_brak {xs : List RawProd} : zero ≠ brak xs := by simp only [ne_eq, reduceCtorEq, not_false_eq_true]
+/-- The minimum non-zero PreProdNum element. -/
+abbrev nil : PreProdNum := brak []
 
 @[simp]
-lemma brak_ne_zero {xs : List RawProd} : brak xs ≠ zero := by simp only [ne_eq, reduceCtorEq, not_false_eq_true]
+lemma zero_ne_brak {xs : List PreProdNum} : zero ≠ brak xs := by simp only [ne_eq, reduceCtorEq, not_false_eq_true]
+
+@[simp]
+lemma brak_ne_zero {xs : List PreProdNum} : brak xs ≠ zero := by simp only [ne_eq, reduceCtorEq, not_false_eq_true]
 
 /-- Access the i-th element of a list, defaulting to zero. -/
-def get (xs : List RawProd) (i : ℕ) : RawProd := xs.getD i zero
+def get (xs : List PreProdNum) (i : ℕ) : PreProdNum := xs.getD i zero
 
 @[simp] lemma get_nil {i : ℕ} : get [] i = zero := by
   simp only [get, List.getD_eq_getElem?_getD, List.length_nil, Nat.not_lt_zero, not_false_eq_true,
     getElem?_neg, Option.getD_none]
 
-@[simp] lemma get_cons_zero {x : RawProd} {xs : List RawProd} : get (x :: xs) 0 = x := by
+@[simp] lemma get_cons_zero {x : PreProdNum} {xs : List PreProdNum} : get (x :: xs) 0 = x := by
   simp only [get, List.getD_eq_getElem?_getD, List.length_cons, Nat.zero_lt_succ, getElem?_pos,
     List.getElem_cons_zero, Option.getD_some]
 
-@[simp] lemma get_cons_succ {x : RawProd} {xs : List RawProd} {i : ℕ} : get (x :: xs) (i + 1) = get xs i := by
+@[simp] lemma get_cons_succ {x : PreProdNum} {xs : List PreProdNum} {i : ℕ} : get (x :: xs) (i + 1) = get xs i := by
   simp only [get, List.getD_eq_getElem?_getD, List.getElem?_cons_succ]
 
 lemma get_replicate_nil_pos (j : ℕ) :
@@ -63,16 +63,16 @@ lemma get_replicate_nil_pos (j : ℕ) :
 
 -- Decidable equality via mutual structural recursion; BEq and LawfulBEq synthesize automatically.
 mutual
-  def decEqRaw : (a b : RawProd) → Decidable (a = b)
+  def decEqRaw : (a b : PreProdNum) → Decidable (a = b)
     | .zero,    .zero   => isTrue rfl
     | .zero,    .brak _ => isFalse (by simp only [zero_ne_brak, not_false_eq_true])
     | .brak _,  .zero   => isFalse (by simp only [brak_ne_zero, not_false_eq_true])
     | .brak xs, .brak ys =>
       match decEqList xs ys with
-      | isTrue h  => isTrue (congrArg RawProd.brak h)
+      | isTrue h  => isTrue (congrArg PreProdNum.brak h)
       | isFalse h => isFalse (by simp only [brak.injEq, h, not_false_eq_true])
 
-  def decEqList : (as bs : List RawProd) → Decidable (as = bs)
+  def decEqList : (as bs : List PreProdNum) → Decidable (as = bs)
     | [],    []    => isTrue rfl
     | [],    _::_  => isFalse (by simp only [List.nil_eq, reduceCtorEq, not_false_eq_true])
     | _::_,  []    => isFalse (by simp only [reduceCtorEq, not_false_eq_true])
@@ -85,18 +85,18 @@ mutual
         | isFalse h  => isFalse (by simp only [List.cons.injEq, h, and_false, not_false_eq_true])
 end
 
-instance : DecidableEq RawProd := decEqRaw
+instance : DecidableEq PreProdNum := decEqRaw
 
-/-- Induction principle for RawProd first -/
-theorem induction {P : RawProd → Prop}
+/-- Induction principle for PreProdNum first -/
+theorem induction {P : PreProdNum → Prop}
     (h_zero : P zero)
-    (h_brak : ∀ xs : List RawProd, (∀ x ∈ xs, P x) → P (brak xs))
-    (x : RawProd) : P x :=
+    (h_brak : ∀ xs : List PreProdNum, (∀ x ∈ xs, P x) → P (brak xs))
+    (x : PreProdNum) : P x :=
   match x with
   | zero => h_zero
   | brak xs => h_brak xs (fun x _ => induction h_zero h_brak x)
 
-theorem induction_list {P : RawProd → Prop}
+theorem induction_list {P : PreProdNum → Prop}
     (h_zero : P zero)
     (h_nil : P nil)
     (h_cons : ∀ x xs, P x → P (brak xs) → P (brak (x::xs)))
@@ -114,7 +114,7 @@ theorem induction_list {P : RawProd → Prop}
 
 
 theorem induction₂
- {P : RawProd → RawProd → Prop}
+ {P : PreProdNum → PreProdNum → Prop}
   (h_zero_left  : ∀ y,                 P zero      y)
   (h_zero_right : ∀ x,                 P x         zero)
   (h_brak_brak  : ∀ xs ys,
@@ -136,7 +136,7 @@ theorem induction₂
 
 
 theorem induction_list₂
- {P : RawProd → RawProd → Prop}
+ {P : PreProdNum → PreProdNum → Prop}
   (h_zero_left  : ∀ y,                 P zero      y)
   (h_zero_right : ∀ x,                 P x         zero)
   (h_nil_left   : ∀ ys,                P nil (brak ys))
@@ -165,7 +165,7 @@ theorem induction_list₂
           . exact (hxs _)
 
 theorem induction_list₃
- {P : RawProd → RawProd → RawProd → Prop}
+ {P : PreProdNum → PreProdNum → PreProdNum → Prop}
   (h_zero_left  : ∀ y z, P zero y z)
   (h_zero_mid : ∀ x z, P x zero z)
   (h_zero_right : ∀ x y, P x y zero)
@@ -203,7 +203,7 @@ theorem induction_list₃
               . exact hxs _ _
 
 theorem induction_list₄
- {P : RawProd → RawProd → RawProd → RawProd → Prop}
+ {P : PreProdNum → PreProdNum → PreProdNum → PreProdNum → Prop}
   (h_zero1  : ∀ x y z, P zero x y z)
   (h_zero2 : ∀ w y z, P w zero y z)
   (h_zero3 : ∀ w x z, P w x zero z)
@@ -250,4 +250,4 @@ theorem induction_list₄
                   . exact hx _ _ _
                   . exact hxs _ _ _
 
-end RawProd
+end PreProdNum

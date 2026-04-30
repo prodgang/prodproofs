@@ -4,7 +4,7 @@
 import re
 from pathlib import Path
 
-LEAN_DIR = Path(__file__).parent / "Prod"
+LEAN_DIR = Path(__file__).parent / "ProdNum"
 DECL_KEYWORDS = {"lemma", "theorem", "def", "abbrev"}
 
 def extract_declarations(text):

@@ -12,7 +12,7 @@ import Mathlib.Order.Defs.PartialOrder
 /-!
 # Productive Numbers — Partial Order
 
-Defines the partial order `⊑` on `RawProd` and lifts it to a `PartialOrder` on `QProd`
+Defines the partial order `⊑` on `PreProdNum` and lifts it to a `PartialOrder` on `ProdNum`
 (via the `Lattice` instance in `Lattice.lean`).
 
 The order is defined componentwise: `brak xs ⊑ brak ys` iff `xs[i] ⊑ ys[i]` for all `i`,
@@ -20,73 +20,73 @@ with zeros truncating as for prune.
 
 ## Main definitions
 
-- `RawProd.pleq_raw`, `RawProd.pleq_list`: the mutual recursive order relation (notation `⊑`)
-- `QProd.pleq`: lifted order (notation `⊑`)
+- `PreProdNum.pleq`, `PreProdNum.pleq_list`: the mutual recursive order relation (notation `⊑`)
+- `ProdNum.pleq`: lifted order (notation `⊑`)
 
 ## Main results
 
-- `pleq_raw_refl`, `pleq_raw_antisymm`, `pleq_transitivity`: order axioms on `RawProd`
-- `pleq_prune_raw_iff`: `x ⊑ y ↔ (x ⊓ y).equiv x`
-- `pleq_dvd`: `x ⊑ y → x ≠ 0 → interp_raw x ∣ interp_raw y`
-- `QProd.mk_pleq_mk_iff`, `lift_pleq₁`, `lift_pleq₂`: lifting API for order statements
+- `pleq_refl`, `pleq_antisymm`, `pleq_transitivity`: order axioms on `PreProdNum`
+- `pleq_prune_iff`: `x ⊑ y ↔ (x ⊓ y).equiv x`
+- `pleq_dvd`: `x ⊑ y → x ≠ 0 → interp x ∣ interp y`
+- `ProdNum.mk_pleq_mk_iff`, `lift_pleq₁`, `lift_pleq₂`: lifting API for order statements
 -/
 
-namespace RawProd
+namespace PreProdNum
 
 mutual
-  def pleq_raw : RawProd → RawProd → Prop
+  def pleq : PreProdNum → PreProdNum → Prop
     | brak xs, brak ys => pleq_list xs ys
     | zero, _ => True
     | _, zero => False
 
-  def pleq_list : List RawProd → List RawProd → Prop
+  def pleq_list : List PreProdNum → List PreProdNum → Prop
     | [], _ => True
     | x :: xs, [] => allzero (x :: xs)
-    | x :: xs, y :: ys => (pleq_raw x y) ∧ pleq_list xs ys
+    | x :: xs, y :: ys => (pleq x y) ∧ pleq_list xs ys
 end
 
 
-scoped infixl:50 " ⊑ " => pleq_raw
+scoped infixl:50 " ⊑ " => pleq
 
 
-lemma zero_pleq {x : RawProd} : zero ⊑ x := by
-  simp only [pleq_raw]
+lemma zero_pleq {x : PreProdNum} : zero ⊑ x := by
+  simp only [pleq]
 
-lemma pleq_zero_eq_zero {x : RawProd} (hleq : x ⊑ zero) : x = zero := by
+lemma pleq_zero_eq_zero {x : PreProdNum} (hleq : x ⊑ zero) : x = zero := by
   cases x with
   | zero => rfl
-  | brak xs  => simp_all only [pleq_raw]
+  | brak xs  => simp_all only [pleq]
 
 @[simp]
-lemma nil_pleq_list_brak {xs : List RawProd} : pleq_list [] xs := by
+lemma nil_pleq_list_brak {xs : List PreProdNum} : pleq_list [] xs := by
   simp only [pleq_list]
 
-lemma nil_pleq_brak {xs : List RawProd} : nil ⊑ brak xs := by
+lemma nil_pleq_brak {xs : List PreProdNum} : nil ⊑ brak xs := by
   induction xs with
-  | nil => simp only [pleq_raw, nil_pleq_list_brak]
+  | nil => simp only [pleq, nil_pleq_list_brak]
   | cons x xx ih =>
-    simp_all only [pleq_raw, nil_pleq_list_brak]
+    simp_all only [pleq, nil_pleq_list_brak]
 
-lemma cons_pleq_cons_iff {x y : RawProd} {xs ys : List RawProd} : brak (x::xs) ⊑ brak (y::ys) ↔  x ⊑ y ∧ brak xs ⊑ brak ys := by
+lemma cons_pleq_cons_iff {x y : PreProdNum} {xs ys : List PreProdNum} : brak (x::xs) ⊑ brak (y::ys) ↔  x ⊑ y ∧ brak xs ⊑ brak ys := by
   constructor
-  . simp_all only [pleq_raw, pleq_list, and_self, implies_true]
+  . simp_all only [pleq, pleq_list, and_self, implies_true]
   . intro hs
-    simp only [pleq_raw, pleq_list]
+    simp only [pleq, pleq_list]
     constructor
     . exact hs.1
-    . simp only [pleq_raw] at hs
+    . simp only [pleq] at hs
       exact hs.2
 
 
-lemma pleq_head_tail_imp_pleq_cons {x y : RawProd} {xs ys : List RawProd } (h_head : x ⊑ y) (h_tail: brak xs ⊑ brak ys ) : brak (x::xs) ⊑ brak (y::ys) := by
-  simp_all only [pleq_raw, pleq_list, and_self]
+lemma pleq_head_tail_imp_pleq_cons {x y : PreProdNum} {xs ys : List PreProdNum } (h_head : x ⊑ y) (h_tail: brak xs ⊑ brak ys ) : brak (x::xs) ⊑ brak (y::ys) := by
+  simp_all only [pleq, pleq_list, and_self]
 
 
 
 
 
-lemma replicate_zero_pleq_brak {n: ℕ } (xs : List RawProd): brak (List.replicate n zero) ⊑ brak xs := by
-  simp only [pleq_raw]
+lemma replicate_zero_pleq_brak {n: ℕ } (xs : List PreProdNum): brak (List.replicate n zero) ⊑ brak xs := by
+  simp only [pleq]
   induction n generalizing xs with
   | zero => simp only [List.replicate_zero, pleq_list]
   | succ n ih =>
@@ -97,13 +97,13 @@ lemma replicate_zero_pleq_brak {n: ℕ } (xs : List RawProd): brak (List.replica
       simp only [List.replicate_succ, pleq_list, zero_pleq, true_and]
       exact ih ys
 
-lemma brak_pleq_nil_iff_allzero {xs : List RawProd} : brak xs ⊑ nil ↔ allzero xs := by
+lemma brak_pleq_nil_iff_allzero {xs : List PreProdNum} : brak xs ⊑ nil ↔ allzero xs := by
   constructor
   . intro hleq
     cases xs with
     | nil => rfl
     | cons x xs =>
-      simp only [pleq_raw, pleq_list] at hleq
+      simp only [pleq, pleq_list] at hleq
       exact hleq
   . intro h
     rw [allzero] at h
@@ -111,24 +111,24 @@ lemma brak_pleq_nil_iff_allzero {xs : List RawProd} : brak xs ⊑ nil ↔ allzer
     simp only [replicate_zero_pleq_brak]
 
 
-lemma pleq_nil_cases {x : RawProd} (h : x ⊑ nil) :
+lemma pleq_nil_cases {x : PreProdNum} (h : x ⊑ nil) :
     x = zero ∨ ∃ ys, x = brak ys ∧ allzero ys := by
     cases x with
     | zero => left; rfl
     | brak xs => right; use xs; exact ⟨rfl, brak_pleq_nil_iff_allzero.mp h⟩
 
-lemma nil_pleq_iff_ne_zero {y : RawProd} : nil ⊑ y ↔ y ≠ zero := by
+lemma nil_pleq_iff_ne_zero {y : PreProdNum} : nil ⊑ y ↔ y ≠ zero := by
   cases y with
-  | zero => simp only [pleq_raw, ne_eq, not_true_eq_false]
+  | zero => simp only [pleq, ne_eq, not_true_eq_false]
   | brak ys => exact ⟨fun _ => brak_ne_zero, fun _ => nil_pleq_brak⟩
 
-lemma pleq_nil_equiv_nil {x : RawProd} (h : x ⊑ nil) (hne : x ≠ zero) : x.equiv nil := by
+lemma pleq_nil_equiv_nil {x : PreProdNum} (h : x ⊑ nil) (hne : x ≠ zero) : x.equiv nil := by
   rcases pleq_nil_cases h with rfl | ⟨ys, rfl, haz⟩
   · exact absurd rfl hne
   · exact brak_equiv_nil_iff_allzero.mpr haz
 
-lemma replicate_nil_pleq_iff (xs : List RawProd) (j : ℕ) :
-    brak (List.replicate j zero ++ [nil]) ⊑ brak xs ↔ get xs j ≠ RawProd.zero := by
+lemma replicate_nil_pleq_iff (xs : List PreProdNum) (j : ℕ) :
+    brak (List.replicate j zero ++ [nil]) ⊑ brak xs ↔ get xs j ≠ PreProdNum.zero := by
   induction j generalizing xs with
   | zero =>
     simp only [List.replicate_zero, List.nil_append]
@@ -150,7 +150,7 @@ lemma replicate_nil_pleq_iff (xs : List RawProd) (j : ℕ) :
       rw [List.replicate_succ, List.cons_append, cons_pleq_cons_iff]; simp only [get_cons_succ]
       exact ⟨fun ⟨_, ht⟩ => (ih xt).mp ht, fun h => ⟨zero_pleq, (ih xt).mpr h⟩⟩
 
-lemma allzero_of_brak_pleq_allzero {xs ys : List RawProd}
+lemma allzero_of_brak_pleq_allzero {xs ys : List PreProdNum}
     (hay : allzero ys) (hle : brak xs ⊑ brak ys) : allzero xs := by
   induction xs generalizing ys with
   | nil => exact rfl
@@ -163,7 +163,7 @@ lemma allzero_of_brak_pleq_allzero {xs ys : List RawProd}
       simp only [allzero, List.length_cons, List.replicate_succ, List.cons.injEq]
       exact ⟨pleq_zero_eq_zero (hyh ▸ hh), ih hyt ht⟩
 
-lemma brak_pleq_brak_get {xs ys : List RawProd} (h : brak xs ⊑ brak ys) (i : ℕ) :
+lemma brak_pleq_brak_get {xs ys : List PreProdNum} (h : brak xs ⊑ brak ys) (i : ℕ) :
     get xs i ⊑ get ys i := by
   revert i
   induction xs generalizing ys with
@@ -185,23 +185,23 @@ lemma brak_pleq_brak_get {xs ys : List RawProd} (h : brak xs ⊑ brak ys) (i : �
 
 
 
-theorem pleq_raw_refl {x : RawProd }: x ⊑ x := by
+theorem pleq_refl {x : PreProdNum }: x ⊑ x := by
   revert x
-  apply RawProd.induction
+  apply PreProdNum.induction
   case h_zero => apply zero_pleq
   case h_brak =>
     intro xs ih
     induction xs with
     | nil => apply nil_pleq_brak
     | cons x xs ihxs =>
-        simp_all only [List.mem_cons, or_true, implies_true, pleq_raw, forall_const,
+        simp_all only [List.mem_cons, or_true, implies_true, pleq, forall_const,
           forall_eq_or_imp, pleq_list, and_self]
 
 
 -- have to make answers equiv not equal because of [0,0] ⊑ [] but they arent literally equal
-theorem pleq_raw_antisymm {x y : RawProd} (h1 : x ⊑ y) (h2 : y ⊑ x) : x.equiv y := by
+theorem pleq_antisymm {x y : PreProdNum} (h1 : x ⊑ y) (h2 : y ⊑ x) : x.equiv y := by
   revert h1 h2 x y
-  apply RawProd.induction_list₂
+  apply PreProdNum.induction_list₂
   case h_zero_left => intro y hz hy; apply pleq_zero_eq_zero at hy; simp only [equiv, normalize_zero, hy]
   case h_zero_right => intro x hx hz; apply pleq_zero_eq_zero at hx ; simp only [equiv, normalize_zero, hx]
   case h_nil_left =>
@@ -222,9 +222,9 @@ theorem pleq_raw_antisymm {x y : RawProd} (h1 : x ⊑ y) (h2 : y ⊑ x) : x.equi
     . exact hxs h_xs_ys h_ys_xs
 
 
-theorem pleq_transitivity {x y z : RawProd} (hxy : x ⊑ y) (hyz : y ⊑ z) : x ⊑ z := by
+theorem pleq_transitivity {x y z : PreProdNum} (hxy : x ⊑ y) (hyz : y ⊑ z) : x ⊑ z := by
   revert hxy hyz x y z
-  apply RawProd.induction_list₃
+  apply PreProdNum.induction_list₃
   case h_zero_left => intro y z h1 h2; exact zero_pleq
   case h_zero_mid => intro x z h1 h2; rw [pleq_zero_eq_zero h1]; exact zero_pleq
   case h_zero_right => intro x y h1 h2; rw [pleq_zero_eq_zero h2] at h1; rw [pleq_zero_eq_zero h1]; exact zero_pleq
@@ -247,10 +247,10 @@ theorem pleq_transitivity {x y z : RawProd} (hxy : x ⊑ y) (hyz : y ⊑ z) : x 
       . exact hxs hxsys hyszs
 
 
-theorem pleq_prune_raw_iff { x y : RawProd } : x ⊑ y ↔ (x ⊓ y).equiv x := by
+theorem pleq_prune_iff { x y : PreProdNum } : x ⊑ y ↔ (x ⊓ y).equiv x := by
   constructor
   · revert x y
-    apply RawProd.induction_list₂
+    apply PreProdNum.induction_list₂
     case h_zero_left => intro _ _ ; rw [zero_prune]; rfl
     case h_zero_right => intro x hx; simp only [prune_zero]; simp only [(pleq_zero_eq_zero hx)]; rfl
     case h_nil_left => intro _ _; rw [nil_prune_nz_eq_nil]; rfl; exact brak_ne_zero
@@ -267,13 +267,13 @@ theorem pleq_prune_raw_iff { x y : RawProd } : x ⊑ y ↔ (x ⊓ y).equiv x := 
       apply cons_equiv_cons_iff.mp; constructor
       . apply h
         exact (cons_pleq_cons_iff.mp hcons).1
-      . simp only [prune_raw] at ht
+      . simp only [prune] at ht
         apply ht
         exact (cons_pleq_cons_iff.mp hcons).2
   · revert x y
-    apply RawProd.induction_list₂
+    apply PreProdNum.induction_list₂
     case h_zero_left => intro _ _ ; exact zero_pleq
-    case h_zero_right => intro x hx; simp only [prune_zero, equiv, normalize] at hx; rw [← zero_eq_normalize_eq_zero hx]; exact pleq_raw_refl
+    case h_zero_right => intro x hx; simp only [prune_zero, equiv, normalize] at hx; rw [← zero_eq_normalize_eq_zero hx]; exact pleq_refl
     case h_nil_left => intro _ _ ; exact nil_pleq_brak
     case h_nil_right =>
       intro xs hprune
@@ -288,32 +288,32 @@ theorem pleq_prune_raw_iff { x y : RawProd } : x ⊑ y ↔ (x ⊓ y).equiv x := 
       simp only [cons_prune_cons] at hcons
       obtain ⟨hl, hr⟩ := cons_equiv_cons_iff.mpr hcons
       apply cons_pleq_cons_iff.mpr
-      simp only [prune_raw] at ht
+      simp only [prune] at ht
       exact ⟨hh hl, ht hr⟩
 
 
-lemma pleq_raw_normalize_right (x y : RawProd) :
+lemma pleq_normalize_right (x y : PreProdNum) :
     x ⊑ y ↔ x ⊑ normalize y := by
-  rw [pleq_prune_raw_iff, pleq_prune_raw_iff]
+  rw [pleq_prune_iff, pleq_prune_iff]
   have h : (x ⊓ y).equiv (x ⊓ normalize y) :=
-    prune_raw_respects_equiv (equiv_refl x) (equiv_symm equiv_of_normalize)
+    prune_respects_equiv (equiv_refl x) (equiv_symm equiv_of_normalize)
   simp only [equiv] at h ⊢; rw [h]
 
-lemma pleq_raw_normalize_left (x y : RawProd) :
+lemma pleq_normalize_left (x y : PreProdNum) :
     x ⊑ y ↔ normalize x ⊑ y := by
-  rw [pleq_prune_raw_iff, pleq_prune_raw_iff]
+  rw [pleq_prune_iff, pleq_prune_iff]
   have h : (x ⊓ y).equiv (normalize x ⊓ y) :=
-    prune_raw_respects_equiv (equiv_symm equiv_of_normalize) (equiv_refl y)
+    prune_respects_equiv (equiv_symm equiv_of_normalize) (equiv_refl y)
   simp only [equiv, normalize_idem] at h ⊢; rw [h]
 
 
-theorem pleq_dvd {x y : RawProd } (hnz: x ≠ zero) (hlq: x ⊑ y ): interp_raw x ∣ interp_raw y := by
+theorem pleq_dvd {x y : PreProdNum } (hnz: x ≠ zero) (hlq: x ⊑ y ): interp x ∣ interp y := by
   revert x y
   apply induction_list₂
   case h_zero_left => intros; contradiction;
   case h_zero_right => intro x hx hx2; exfalso; exact hx (pleq_zero_eq_zero hx2)
-  case h_nil_left => intros; simp only [interp_raw, interp_raw_nil, isUnit_iff_eq_one, IsUnit.dvd]
-  case h_nil_right => intro xs hnz hl; have haz :=  brak_pleq_nil_iff_allzero.mp hl; simp only [interp_raw, interp_allzero_eq_one haz, interp_raw_nil, dvd_refl]
+  case h_nil_left => intros; simp only [interp, interp_nil, isUnit_iff_eq_one, IsUnit.dvd]
+  case h_nil_right => intro xs hnz hl; have haz :=  brak_pleq_nil_iff_allzero.mp hl; simp only [interp, interp_allzero_eq_one haz, interp_nil, dvd_refl]
   case h_cons_cons =>
     intro x y xs ys h1 h2 h3 h4
     -- turn x | y to x.factorization < y.factorization
@@ -327,103 +327,92 @@ theorem pleq_dvd {x y : RawProd } (hnz: x ≠ zero) (hlq: x ⊑ y ): interp_raw 
     | zero =>
       simp only [get_cons_zero]
       by_cases hxz : x = zero
-      · simp only [hxz, interp_raw_zero, zero_le]
+      · simp only [hxz, interp_zero, zero_le]
       · have hyz : y ≠ zero := fun h => hxz (pleq_zero_eq_zero (h ▸ hxy))
-        have hynz : interp_raw y ≠ 0 := fun h => hyz (interp_raw_eq_zero_eq_zero y h)
+        have hynz : interp y ≠ 0 := fun h => hyz (interp_eq_zero_eq_zero y h)
         exact Nat.le_of_dvd (by omega) (h1 hxz hxy)
     | succ j =>
       simp only [get_cons_succ]
       have hdvd := h2 brak_ne_zero hbrak
-      simp only [interp_raw] at hdvd
+      simp only [interp] at hdvd
       have hle := (Nat.factorization_prime_le_iff_dvd
         (interp_list_neq_zero xs) (interp_list_neq_zero ys)).mpr hdvd (Nat.nth Nat.Prime j) (Nat.prime_nth_prime j)
       rw [← factorization_interp_list_zero j (xs := xs), ← factorization_interp_list_zero j (xs := ys)]
       exact hle
 
 /-- The converse of `pleq_dvd` fails: `x = [[[]]]` and `y = [[0, []]]` give
-`interp_raw x = 4`, `interp_raw y = 8`, so `4 ∣ 8`, but `x ⊄ y`. -/
+`interp x = 4`, `interp y = 8`, so `4 ∣ 8`, but `x ⊄ y`. -/
 theorem converse_counterexample :
     let x := brak [brak [nil]]
     let y := brak [brak [zero, nil]]
-    interp_raw x = 4 ∧ interp_raw y = 8 ∧ (4 : ℕ) ∣ 8 ∧ ¬ (x ⊑ y) := by
+    interp x = 4 ∧ interp y = 8 ∧ (4 : ℕ) ∣ 8 ∧ ¬ (x ⊑ y) := by
   refine ⟨?_, ?_, ?_, ?_⟩
-  · simp only [interp_raw, interp_list, Nat.nth_prime_zero_eq_two]; norm_num
-  · simp only [interp_raw, interp_list, Nat.nth_prime_zero_eq_two]; norm_num
+  · simp only [interp, interp_list, Nat.nth_prime_zero_eq_two]; norm_num
+  · simp only [interp, interp_list, Nat.nth_prime_zero_eq_two]; norm_num
   · norm_num
   · intro h
-    have : nil ⊑ (zero : RawProd) :=
+    have : nil ⊑ (zero : PreProdNum) :=
       (cons_pleq_cons_iff.mp (cons_pleq_cons_iff.mp h).1).1
-    simp only [pleq_raw] at this
+    simp only [pleq] at this
 
 
 
-end RawProd
+end PreProdNum
 
-namespace QProd
+namespace ProdNum
 
 
-def pleq (x y : QProd) : Prop :=
-  RawProd.pleq_raw (rep x) (rep y)
+def pleq (x y : ProdNum) : Prop :=
+  PreProdNum.pleq (rep x) (rep y)
 
 
 scoped infixl:50 " ⊑ " => pleq
 
 
-lemma pleq_refl (x : QProd) : x ⊑ x := by
-  dsimp only [pleq]
-  apply RawProd.pleq_raw_refl
-
-
-theorem pleq_antisymm (x y : QProd) (hxy : x ⊑ y) (hyx : y ⊑ x) : x = y := by
-  dsimp only [pleq] at hxy hyx
-  have hequiv : x.rep.equiv y.rep := RawProd.pleq_raw_antisymm hxy hyx
-  exact rep_equiv_eq hequiv
-
-
-theorem pleq_transitivity (x y z : QProd) (hxy : x ⊑ y) (hyz : y ⊑ z) : x ⊑ z := by
+theorem pleq_transitivity (x y z : ProdNum) (hxy : x ⊑ y) (hyz : y ⊑ z) : x ⊑ z := by
   simp_all only [pleq]
-  exact RawProd.pleq_transitivity hxy hyz
+  exact PreProdNum.pleq_transitivity hxy hyz
 
 
-/-- The fundamental bridge: `mk a ⊑ mk b` in QProd iff `a ⊑ b` as raw terms.
+/-- `mk a ⊑ mk b` in ProdNum iff `a ⊑ b` as PreProdNum terms.
     Replaces the need for separate `le_mk_iff` / `mk_le_iff` variants. -/
-lemma mk_pleq_mk_iff {a b : RawProd} : (mk a : QProd) ⊑ mk b ↔ RawProd.pleq_raw a b := by
-  show RawProd.pleq_raw (RawProd.normalize a) (RawProd.normalize b) ↔ RawProd.pleq_raw a b
-  exact (RawProd.pleq_raw_normalize_left a (RawProd.normalize b)).symm.trans
-        (RawProd.pleq_raw_normalize_right a b).symm
+lemma mk_pleq_mk_iff {a b : PreProdNum} : (mk a : ProdNum) ⊑ mk b ↔ PreProdNum.pleq a b := by
+  show PreProdNum.pleq (PreProdNum.normalize a) (PreProdNum.normalize b) ↔ PreProdNum.pleq a b
+  exact (PreProdNum.pleq_normalize_left a (PreProdNum.normalize b)).symm.trans
+        (PreProdNum.pleq_normalize_right a b).symm
 
-/-- Lift a unary QProd order statement from a raw `pleq_raw` statement.
+/-- Lift a unary ProdNum order statement from a PreProdNum `pleq` statement.
     Analogue of `lift_eq₁` for `⊑` instead of `=`.
     Note: uses term-mode `▸` rather than `rw` because `rw` cannot match `mk a` against `⟦a⟧`
     even though they are definitionally equal. -/
-lemma lift_pleq₁ {f g : RawProd → RawProd} {F G : QProd → QProd}
+lemma lift_pleq₁ {f g : PreProdNum → PreProdNum} {F G : ProdNum → ProdNum}
     (hF : ∀ a, F (mk a) = mk (f a) := by intro _; rfl)
     (hG : ∀ a, G (mk a) = mk (g a) := by intro _; rfl)
-    (h : ∀ a, RawProd.pleq_raw (f a) (g a)) :
+    (h : ∀ a, PreProdNum.pleq (f a) (g a)) :
     ∀ x, F x ⊑ G x :=
   Quotient.ind (fun a => hF a ▸ hG a ▸ mk_pleq_mk_iff.mpr (h a))
 
-/-- Lift a binary QProd order statement from a raw `pleq_raw` statement.
+/-- Lift a binary ProdNum order statement from a PreProdNum `pleq` statement.
     Analogue of `lift_eq₂` for `⊑` instead of `=`.
     Note: uses term-mode `▸` rather than `rw` — see `lift_pleq₁`. -/
-lemma lift_pleq₂ {f g : RawProd → RawProd → RawProd} {F G : QProd → QProd → QProd}
+lemma lift_pleq₂ {f g : PreProdNum → PreProdNum → PreProdNum} {F G : ProdNum → ProdNum → ProdNum}
     (hF : ∀ a b, F (mk a) (mk b) = mk (f a b) := by intro _ _; rfl)
     (hG : ∀ a b, G (mk a) (mk b) = mk (g a b) := by intro _ _; rfl)
-    (h : ∀ a b, RawProd.pleq_raw (f a b) (g a b)) :
+    (h : ∀ a b, PreProdNum.pleq (f a b) (g a b)) :
     ∀ x y, F x y ⊑ G x y :=
   fun x y => Quotient.ind₂ (fun a b => hF a b ▸ hG a b ▸ mk_pleq_mk_iff.mpr (h a b)) x y
 
 
-lemma pleq_prune_iff {x y : QProd} : x ⊑ y ↔ x ⊓ y = x := by
+lemma pleq_prune_iff {x y : ProdNum} : x ⊑ y ↔ x ⊓ y = x := by
   have hxy : x ⊓ y = mk (x.rep ⊓ y.rep) := by
     conv_lhs => rw [← mk_rep_eq (q := x), ← mk_rep_eq (q := y)]
     exact prune_mk_mk x.rep y.rep
   constructor
   · intro h
-    rw [hxy]; exact (Quotient.sound (RawProd.pleq_prune_raw_iff.mp h)).trans mk_rep_eq
+    rw [hxy]; exact (Quotient.sound (PreProdNum.pleq_prune_iff.mp h)).trans mk_rep_eq
   · intro h
-    apply RawProd.pleq_prune_raw_iff.mpr
+    apply PreProdNum.pleq_prune_iff.mpr
     rw [hxy] at h; exact Quotient.exact (h.trans mk_rep_eq.symm)
 
 
-end QProd
+end ProdNum
