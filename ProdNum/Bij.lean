@@ -73,13 +73,13 @@ theorem interp_inj {x y : PreProdNum} : interp x = interp y → x.equiv y := by
   | h_zero =>
     intro y h
     simp only [interp_zero] at h
-    exact (interp_eq_zero_eq_zero y h.symm).symm ▸ equiv_refl zero
+    exact (interp_eq_zero_eq_zero h.symm).symm ▸ equiv_refl zero
   | h_brak xs ih =>
     intro y h
     cases y with
     | zero =>
       simp only [interp_zero] at h
-      exact (interp_eq_zero_eq_zero (brak xs) h).symm ▸ equiv_refl zero
+      exact (interp_eq_zero_eq_zero h).symm ▸ equiv_refl zero
     | brak ys =>
       have h_factors : ∀ i, interp (get xs i) = interp (get ys i) := by
         intro i
@@ -102,7 +102,7 @@ theorem interp_inj {x y : PreProdNum} : interp x = interp y → x.equiv y := by
           specialize h_factors i
           simp only [get, List.getD_eq_getElem?_getD, hi, not_false_eq_true, getElem?_neg, Option.getD_none] at h_factors ⊢
           rw [interp_zero] at h_factors
-          have y_is_zero := interp_eq_zero_eq_zero _ (h_factors).symm
+          have y_is_zero := interp_eq_zero_eq_zero (h_factors).symm
           rw [y_is_zero]
           exact equiv_refl zero
 

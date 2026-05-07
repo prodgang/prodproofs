@@ -313,7 +313,7 @@ theorem pleq_dvd {x y : PreProdNum } (hnz: x ≠ zero) (hlq: x ⊑ y ): interp x
   case h_zero_left => intros; contradiction;
   case h_zero_right => intro x hx hx2; exfalso; exact hx (pleq_zero_eq_zero hx2)
   case h_nil_left => intros; simp only [interp, interp_nil, isUnit_iff_eq_one, IsUnit.dvd]
-  case h_nil_right => intro xs hnz hl; have haz :=  brak_pleq_nil_iff_allzero.mp hl; simp only [interp, interp_allzero_eq_one haz, interp_nil, dvd_refl]
+  case h_nil_right => intro xs hnz hl; have haz :=  brak_pleq_nil_iff_allzero.mp hl; simp only [interp, interp_list_allzero_eq_one_iff.mp haz, interp_nil, dvd_refl]
   case h_cons_cons =>
     intro x y xs ys h1 h2 h3 h4
     -- turn x | y to x.factorization < y.factorization
@@ -329,7 +329,7 @@ theorem pleq_dvd {x y : PreProdNum } (hnz: x ≠ zero) (hlq: x ⊑ y ): interp x
       by_cases hxz : x = zero
       · simp only [hxz, interp_zero, zero_le]
       · have hyz : y ≠ zero := fun h => hxz (pleq_zero_eq_zero (h ▸ hxy))
-        have hynz : interp y ≠ 0 := fun h => hyz (interp_eq_zero_eq_zero y h)
+        have hynz : interp y ≠ 0 := fun h => hyz (interp_eq_zero_eq_zero h)
         exact Nat.le_of_dvd (by omega) (h1 hxz hxy)
     | succ j =>
       simp only [get_cons_succ]

@@ -22,12 +22,13 @@ if and only if `x` is shallow.
 
 ## Main results
 
-- `instance : BooleanAlgebra (NonZeroDownset x)` (when `x` is shallow)
-- `shallow_of_nzd_complemented`: converse — if the downset has complements, then `x` is shallow
+- `lem_iff_shallow`: `NonZeroDownset x` has a Boolean complement (via `compl_fn`) iff `x` is shallow
+- `instance : BooleanAlgebra (NonZeroDownset x)` (when `x` is shallow, via `lem_iff_shallow`)
 -/
 
 namespace PreProdNum
 
+/--complement of brak ys relative to brak xs-/
 private def compl_list : List PreProdNum → List PreProdNum → List PreProdNum
   | [],       _        => []
   | x :: xs,  []       => x :: compl_list xs []
@@ -91,8 +92,6 @@ lemma graft_compl_list_equiv_xs {xs ys : List PreProdNum} (hs : shallow xs)
           have := shallow_iff_pleq_nil.mp hs 0; rwa [get_cons_zero] at this
         exact equiv_trans (pleq_nil_equiv_nil (pleq_transitivity hh hxh_nil) h)
                           (pleq_nil_equiv_nil hxh_nil (fun heq => h (pleq_zero_eq_zero (heq ▸ hh)))).symm
-
-
 
 end PreProdNum
 
@@ -170,7 +169,7 @@ private instance nzd_boundedOrder (x : ProdNum) (hx : shallow x) : BoundedOrder 
   bot    := ⟨nil, ⟨le_refl nil, shallow_nil_le hx⟩⟩
   bot_le := fun a => a.2.1
 
-private def compl_fn (x : ProdNum) (a : NonZeroDownset x) : ProdNum :=
+def compl_fn (x : ProdNum) (a : NonZeroDownset x) : ProdNum :=
   mk (brak (compl_list
     (match x.rep with | PreProdNum.brak xs => xs | PreProdNum.zero => [])
     (match a.val.rep with | PreProdNum.brak ys => ys | PreProdNum.zero => [])))
@@ -180,47 +179,19 @@ private lemma compl_fn_eq {x : ProdNum} (xs : List PreProdNum) (hxrep : x.rep = 
     compl_fn x a = mk (brak (compl_list xs ys)) := by
   simp only [compl_fn, hxrep, harep]
 
+lemma compl_fn_prune {x : ProdNum} (hnil : nil ≤ x) (a : NonZeroDownset x) :
+    ProdNum.prune a.val (compl_fn x a) = nil := by
+  obtain ⟨xs, hxrep⟩ := exists_brak_rep_of_nil_le hnil
+  obtain ⟨ys, harep⟩ := nzd_exists_brak_rep a
+  rw [compl_fn_eq xs hxrep a ys harep, eq_mk_brak_of_rep harep, prune_mk_mk]
+  exact Quotient.sound (brak_equiv_nil_iff_allzero.mpr (prune_compl_list_allzero xs ys))
+
 private instance nzd_compl (x : ProdNum) (hx : shallow x) : Compl (NonZeroDownset x) :=
   ⟨fun a => ⟨compl_fn x a, by
     obtain ⟨xs, hxrep, _⟩ := shallow_exists_brak_rep hx
     obtain ⟨ys, harep⟩    := nzd_exists_brak_rep a
     rw [compl_fn_eq xs hxrep a ys harep, eq_mk_brak_of_rep hxrep]
     exact ⟨le_of_mk_pleq nil_pleq_brak, le_of_mk_pleq (brak_compl_list_pleq xs ys)⟩⟩⟩
-
-
-/-! ### Forward direction: Boolean algebra from shallowness -/
-
-
-instance (x : ProdNum) (hx : shallow x) : BooleanAlgebra (NonZeroDownset x) := by
-  letI := nzd_distribLattice x
-  letI := nzd_boundedOrder x hx
-  letI := nzd_compl x hx
-  exact {
-    inf_compl_le_bot := fun a => le_of_eq <| by
-      obtain ⟨xs, hxrep, _⟩ := shallow_exists_brak_rep hx
-      obtain ⟨ys, harep⟩    := nzd_exists_brak_rep a
-      apply Subtype.ext; simp only [nzd_coe_inf]
-      rw [show aᶜ.val = mk (brak (compl_list xs ys)) from compl_fn_eq xs hxrep a ys harep,
-          eq_mk_brak_of_rep harep]
-      show ProdNum.prune (mk (brak ys)) (mk (brak (compl_list xs ys))) = nil
-      exact Quotient.sound (brak_equiv_nil_iff_allzero.mpr (prune_compl_list_allzero xs ys))
-    top_le_sup_compl := fun a => le_of_eq <| Eq.symm <| by
-      obtain ⟨xs, hxrep, hs⟩ := shallow_exists_brak_rep hx
-      obtain ⟨ys, harep⟩    := nzd_exists_brak_rep a
-      apply Subtype.ext; simp only [nzd_coe_sup]
-      have hle : brak ys ⊑ brak xs := pleq_of_rep_le harep hxrep a.2.2
-      rw [show aᶜ.val = mk (brak (compl_list xs ys)) from compl_fn_eq xs hxrep a ys harep,
-          eq_mk_brak_of_rep harep]
-      show ProdNum.graft (mk (brak ys)) (mk (brak (compl_list xs ys))) = x
-      rw [eq_mk_brak_of_rep hxrep]
-      exact Quotient.sound (graft_compl_list_equiv_xs hs hle)
-    le_top   := fun a => a.2.2
-    bot_le   := fun a => a.2.1
-    sdiff_eq := fun _ _ => rfl
-    himp_eq  := fun _ _ => rfl }
-
-
-/-! ### Backward direction: shallowness from Boolean algebra -/
 
 
 def singleton_j (j : ℕ) : ProdNum :=
@@ -235,53 +206,71 @@ lemma singleton_j_mem_NZD_iff {x : ProdNum} {xs : List PreProdNum} (hxrep : x.re
   · rw [← pleq_iff_le, singleton_j, hxeq, mk_pleq_mk_iff]
     exact (replicate_nil_pleq_iff xs j).mpr hne
 
-/-- Backward direction: if `NonZeroDownset x` carries a Boolean-algebra structure
-(supplied here as explicit data — `top`, `bot`, `compl` with the two BA axioms), then
-`x` is shallow.
+private lemma singleton_j_rep (i : ℕ) :
+    (singleton_j i).rep = PreProdNum.brak (List.replicate i PreProdNum.zero ++ [PreProdNum.nil]) := by
+  have : (singleton_j i).rep = PreProdNum.normalize
+      (PreProdNum.brak (List.replicate i PreProdNum.zero ++ [PreProdNum.nil])) := rfl
+  rw [this, PreProdNum.normalize]
+  simp only [List.map_append, List.map_replicate, PreProdNum.normalize_zero,
+             List.map_cons, List.map_nil, PreProdNum.normalize_nil]
+  congr 1
+  exact trim_append_brak_eq_self _ _
 
-The data is taken explicitly rather than as a `[BooleanAlgebra _]` hypothesis to avoid
-an instance diamond against the canonical `Lattice (NonZeroDownset x)`. -/
-theorem shallow_of_nzd_complemented (x : ProdNum)
-    (top bot : NonZeroDownset x)
-    (htop : ∀ a, a ≤ top)
-    (hbot : ∀ a, bot ≤ a)
-    (compl : NonZeroDownset x → NonZeroDownset x)
-    (h_inf : ∀ a, a ⊓ compl a = bot)
-    (h_sup : ∀ a, a ⊔ compl a = top) : shallow x := by
-  have hnil_le_x : (nil : ProdNum) ≤ x := le_trans bot.2.1 bot.2.2
-  obtain ⟨xs, hxrep⟩ := exists_brak_rep_of_nil_le hnil_le_x
-  have hbot_nil : bot.val = nil :=
-    le_antisymm (hbot ⟨nil, le_refl nil, hnil_le_x⟩) bot.2.1
-  have htop_x : top.val = x :=
-    le_antisymm top.2.2 (htop ⟨x, hnil_le_x, le_refl x⟩)
-  simp only [ProdNum.shallow, hxrep]; rw [shallow_iff_pleq_nil]
-  intro i
-  by_cases hi : get xs i = PreProdNum.zero
-  · rw [hi]; exact zero_pleq
-  let e : NonZeroDownset x := ⟨singleton_j i, (singleton_j_mem_NZD_iff hxrep i).mpr hi⟩
-  obtain ⟨cs, hcrep⟩ := nzd_exists_brak_rep (compl e)
-  have hev : e.val = mk (brak (List.replicate i PreProdNum.zero ++ [PreProdNum.nil])) := rfl
-  have hcv : (compl e).val = mk (brak cs) := eq_mk_brak_of_rep hcrep
-  have hprune_nil : allzero (prune_list (List.replicate i PreProdNum.zero ++ [PreProdNum.nil]) cs) := by
-    have hval : ProdNum.prune e.val (compl e).val = nil := by
-      rw [← nzd_coe_inf, h_inf]; exact hbot_nil
-    rw [hev, hcv, prune_mk_mk] at hval; simp only [PreProdNum.prune] at hval
-    exact brak_equiv_nil_iff_allzero.mp (Quotient.exact hval)
-  have hci_zero : get cs i = PreProdNum.zero := by
-    have h1 := allzero_get_zero hprune_nil i
-    rw [get_prune_list, get_replicate_nil_pos] at h1
-    exact nil_prune_eq_zero_iff.mp h1
-  have hget_equiv : (get xs i).equiv PreProdNum.nil := by
-    have hgraft : ProdNum.graft e.val (compl e).val = x := by
-      rw [← nzd_coe_sup, h_sup]; exact htop_x
-    rw [hev, hcv, graft_mk_mk, eq_mk_brak_of_rep hxrep] at hgraft; simp only [PreProdNum.graft] at hgraft
-    have heq := brak_equiv_get_equiv (Quotient.exact hgraft) i
-    rw [get_graft_list, get_replicate_nil_pos, hci_zero, graft_zero] at heq
-    exact heq.symm
-  cases hget : get xs i with
-  | zero    => exact zero_pleq
-  | brak ys =>
-    rw [hget] at hget_equiv
-    exact brak_pleq_nil_iff_allzero.mpr (brak_equiv_nil_iff_allzero.mp hget_equiv)
+theorem lem_iff_shallow {x : ProdNum} (hnil : nil ≤ x) :
+    (∀ a : NonZeroDownset x, ProdNum.graft a.val (compl_fn x a) = x) ↔ shallow x := by
+  obtain ⟨xs, hxrep⟩ := exists_brak_rep_of_nil_le hnil
+  constructor
+  · intro h_lem
+    simp only [ProdNum.shallow, hxrep]
+    rw [shallow_iff_pleq_nil]
+    intro i
+    by_cases hi : get xs i = PreProdNum.zero
+    · rw [hi]; exact zero_pleq
+    let cs := List.replicate i PreProdNum.zero ++ [PreProdNum.nil]
+    let e : NonZeroDownset x := ⟨singleton_j i, (singleton_j_mem_NZD_iff hxrep i).mpr hi⟩
+    have hrep_e : e.val.rep = PreProdNum.brak cs := singleton_j_rep i
+    have hcompl_eq : compl_fn x e = mk (brak (compl_list xs cs)) :=
+      compl_fn_eq xs hxrep e cs hrep_e
+    have hci_zero : get (compl_list xs cs) i = PreProdNum.zero := by
+      have h1 := allzero_get_zero (prune_compl_list_allzero xs cs) i
+      rw [get_prune_list, get_replicate_nil_pos] at h1
+      exact nil_prune_eq_zero_iff.mp h1
+    have hget_equiv : (get xs i).equiv PreProdNum.nil := by
+      have hge := h_lem e
+      rw [eq_mk_brak_of_rep hrep_e, hcompl_eq, graft_mk_mk, eq_mk_brak_of_rep hxrep] at hge
+      have heq := brak_equiv_get_equiv (Quotient.exact hge) i
+      rw [get_graft_list, get_replicate_nil_pos, hci_zero, graft_zero] at heq
+      exact heq.symm
+    cases hget : get xs i with
+    | zero => exact zero_pleq
+    | brak ys =>
+      rw [hget] at hget_equiv
+      exact brak_pleq_nil_iff_allzero.mpr (brak_equiv_nil_iff_allzero.mp hget_equiv)
+  · intro hs a
+    obtain ⟨ys, harep⟩ := nzd_exists_brak_rep a
+    have hs' : PreProdNum.shallow xs := by rwa [ProdNum.shallow, hxrep] at hs
+    have hle : brak ys ⊑ brak xs := pleq_of_rep_le harep hxrep a.2.2
+    rw [eq_mk_brak_of_rep harep, compl_fn_eq xs hxrep a ys harep, graft_mk_mk,
+        eq_mk_brak_of_rep hxrep]
+    exact Quotient.sound (graft_compl_list_equiv_xs hs' hle)
+
+/-! ### Main theorem and Boolean algebra instance -/
+
+
+instance (x : ProdNum) (hx : shallow x) : BooleanAlgebra (NonZeroDownset x) := by
+  letI := nzd_distribLattice x
+  letI := nzd_boundedOrder x hx
+  letI := nzd_compl x hx
+  have hnil : nil ≤ x := shallow_nil_le hx
+  exact {
+    inf_compl_le_bot := fun a => le_of_eq <| Subtype.ext <| by
+      simp only [nzd_coe_inf]; exact compl_fn_prune hnil a
+    top_le_sup_compl := fun a => le_of_eq <| Eq.symm <| Subtype.ext <| by
+      simp only [nzd_coe_sup]; exact (lem_iff_shallow hnil).mpr hx a
+    le_top   := fun a => a.2.2
+    bot_le   := fun a => a.2.1
+    sdiff_eq := fun _ _ => rfl
+    himp_eq  := fun _ _ => rfl }
+
 
 end ProdNum

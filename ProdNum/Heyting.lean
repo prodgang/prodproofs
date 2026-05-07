@@ -46,12 +46,6 @@ mutual
         himp x (get as 0) (get bs 0) :: himp_list xs as.tail bs.tail
 end
 
-private lemma get_tail (xs : List PreProdNum) (i : ℕ) : get xs (i + 1) = get xs.tail i := by
-  cases xs with
-  | nil => simp only [get_nil, List.tail_nil]
-  | cons _ _ => simp only [get_cons_succ, List.tail_cons]
-
-
 /-- `himp x a b ⊑ x`: the result is always bounded by `x`. -/
 lemma himp_pleq_bound (x a b : PreProdNum) : himp x a b ⊑ x := by
   revert x a b
