@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2024 Edwin Agnew. All rights reserved.
+Copyright (c) 2024 Prod Gang. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Edwin Agnew
+Authors: Prod Gang
 -/
 import Mathlib.Data.List.Basic
 import Mathlib.Data.List.Induction
@@ -60,6 +60,18 @@ lemma get_replicate_nil_pos (j : ℕ) :
   induction j with
   | zero => simp only [List.replicate_zero, List.nil_append, get_cons_zero]
   | succ n ih => simp only [List.replicate_succ, List.cons_append, get_cons_succ, ih]
+
+/- converse not true cos zero always in the tail -/
+lemma mem_imp_exists_get { x : PreProdNum } {xs : List PreProdNum } (h : x ∈ xs) : ∃ i, get xs i = x := by
+  induction xs with
+  | nil => contradiction
+  | cons xh xt ih =>
+    --rw [List.mem_cons] at h
+    cases List.mem_cons.mp h with
+    | inl hhead => use 0; simp; exact hhead.symm
+    | inr htail => obtain ⟨i, hi⟩ := ih htail; use i+1; rw [get_cons_succ]; exact hi
+
+
 
 -- Decidable equality via mutual structural recursion; BEq and LawfulBEq synthesize automatically.
 mutual

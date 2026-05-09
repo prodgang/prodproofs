@@ -1,13 +1,14 @@
 /-
-Copyright (c) 2024 Edwin Agnew. All rights reserved.
+Copyright (c) 2024 Prod Gang. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Edwin Agnew
+Authors: Prod Gang
 -/
 import ProdNum.QuotDefs
 import ProdNum.PruneBasic
 import ProdNum.Bij
 import Mathlib.Data.Prod.Basic
 import Mathlib.Order.Defs.PartialOrder
+import Mathlib.Order.RelIso.Basic
 
 /-!
 # Productive Numbers — Partial Order
@@ -27,7 +28,8 @@ with zeros truncating as for prune.
 
 - `pleq_refl`, `pleq_antisymm`, `pleq_transitivity`: order axioms on `PreProdNum`
 - `pleq_prune_iff`: `x ⊑ y ↔ (x ⊓ y).equiv x`
-- `pleq_dvd`: `x ⊑ y → x ≠ 0 → interp x ∣ interp y`
+- `pleq_dvd`: `x ⊑ y → x ≠ 0 → interp x ∣ interp y` (both `PreProdNum` and `ProdNum` versions)
+- `interpRelHom`: `interp` as a `RelHom` from `(ProdNum \ {0}, ⊑)` to `(ℕ, ∣)`
 - `ProdNum.mk_pleq_mk_iff`, `lift_pleq₁`, `lift_pleq₂`: lifting API for order statements
 -/
 
@@ -253,11 +255,11 @@ theorem pleq_prune_iff { x y : PreProdNum } : x ⊑ y ↔ (x ⊓ y).equiv x := b
     apply PreProdNum.induction_list₂
     case h_zero_left => intro _ _ ; rw [zero_prune]; rfl
     case h_zero_right => intro x hx; simp only [prune_zero]; simp only [(pleq_zero_eq_zero hx)]; rfl
-    case h_nil_left => intro _ _; rw [nil_prune_nz_eq_nil]; rfl; exact brak_ne_zero
+    case h_nil_left => intro _ _; rw [nil_prune_brak_eq_nil]; rfl
     case h_nil_right =>
       intro xs hleq
       have haz := brak_pleq_nil_iff_allzero.mp hleq
-      rw [prune_nil_eq_nil, haz]
+      rw [brak_prune_nil_eq_nil, haz]
       simp only [equiv, normalize_nil, normalize, equiv_zero_eq_zero, List.map_replicate, brak.injEq, List.nil_eq]
       apply trim_eq_nil_iff.mpr
       simp only [allzero, List.length_replicate]
@@ -277,7 +279,7 @@ theorem pleq_prune_iff { x y : PreProdNum } : x ⊑ y ↔ (x ⊓ y).equiv x := b
     case h_nil_left => intro _ _ ; exact nil_pleq_brak
     case h_nil_right =>
       intro xs hprune
-      rw [prune_nil_eq_nil] at hprune
+      rw [brak_prune_nil_eq_nil] at hprune
       have hxs_az : allzero xs := nil_equiv_brak_iff_allzero.mp hprune
       simp only [allzero] at hxs_az
       rw [hxs_az]
@@ -402,6 +404,19 @@ lemma lift_pleq₂ {f g : PreProdNum → PreProdNum → PreProdNum} {F G : ProdN
     ∀ x y, F x y ⊑ G x y :=
   fun x y => Quotient.ind₂ (fun a b => hF a b ▸ hG a b ▸ mk_pleq_mk_iff.mpr (h a b)) x y
 
+
+theorem pleq_dvd {x y : ProdNum} (hnz : x ≠ zero) (h : x ⊑ y) : interp x ∣ interp y := by
+  induction x using Quotient.ind; induction y using Quotient.ind
+  rename_i a b
+  exact PreProdNum.pleq_dvd
+    (fun haz => hnz (mk_zero_eq_zero ▸ congrArg mk haz))
+    (mk_pleq_mk_iff.mp h)
+
+/-- `interp` as a relation homomorphism from `(ProdNum \ {0}, ⊑)` to `(ℕ, ∣)`. -/
+noncomputable def interpRelHom :
+    RelHom (fun (a b : {x : ProdNum // x ≠ zero}) => a.1 ⊑ b.1) (· ∣ · : ℕ → ℕ → Prop) where
+  toFun x := interp x.1
+  map_rel' {a _} h := pleq_dvd a.2 h
 
 lemma pleq_prune_iff {x y : ProdNum} : x ⊑ y ↔ x ⊓ y = x := by
   have hxy : x ⊓ y = mk (x.rep ⊓ y.rep) := by

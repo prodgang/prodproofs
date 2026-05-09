@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2024 Edwin Agnew. All rights reserved.
+Copyright (c) 2024 Prod Gang. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Edwin Agnew
+Authors: Prod Gang
 -/
 import ProdNum.Poset
 import ProdNum.Lattice
@@ -67,37 +67,30 @@ lemma himp_pleq_bound (x a b : PreProdNum) : himp x a b ⊑ x := by
           exact ⟨hx xh (List.mem_cons.mpr (.inl rfl)) _ _,
                  ih (fun x hxt a b => hx x (List.mem_cons_of_mem xh hxt) a b) as.tail bs.tail⟩
 
+private lemma brak_not_pleq_zero {xs : List PreProdNum} : ¬ (brak xs ⊑ zero) :=
+  fun h => absurd (pleq_zero_eq_zero h) brak_ne_zero
 
 /-- Core Heyting adjunction: `a ⊑ x → (a ⊑ himp x b c ↔ a ⊓ b ⊑ c)`. -/
 lemma himp_adjunction {x a b c : PreProdNum} (ha : a ⊑ x) :
     a ⊑ himp x b c ↔ a ⊓ b ⊑ c := by
-  -- Generalise over a b c before induction so the IH is ∀ a b c, not specialised.
   suffices key : ∀ y a b c : PreProdNum, a ⊑ y → (a ⊑ himp y b c ↔ a ⊓ b ⊑ c) from key x a b c ha
   intro y
   induction y using PreProdNum.induction_list
   case h_zero =>
     intro a b c ha
-    rw [pleq_zero_eq_zero ha]
-    simp only [himp, zero_pleq, zero_prune]
+    rw [pleq_zero_eq_zero ha]; simp only [himp, zero_pleq, zero_prune]
   case h_nil =>
     intro a b c ha
     cases a <;> cases b <;> cases c
-    all_goals simp only [himp, zero_pleq, prune_zero, zero_prune,
-      iff_true]
+    all_goals simp only [himp, zero_pleq, prune_zero, zero_prune, iff_true]
     · exact ha
     · exact ha
     · rename_i as bs
-      constructor
-      · intro h; simp only [pleq] at h
-      · intro h; exact absurd (pleq_zero_eq_zero h) (brak_prune_brak_ne_zero _ _)
+      exact ⟨fun h => absurd h brak_not_pleq_zero, fun h => absurd (pleq_zero_eq_zero h) (brak_prune_brak_ne_zero _ _)⟩
     · rename_i as bs cs
-      constructor
-      · intro _
-        have haz := brak_pleq_nil_iff_allzero.mp ha
-        suffices h : brak as ⊓ brak bs ⊑ brak [] from pleq_transitivity h nil_pleq_brak
-        rw [allzero_prune_eq_replicate haz]
-        exact replicate_zero_pleq_brak _
-      · intro _; exact ha
+      refine ⟨fun _ => pleq_transitivity ?_ nil_pleq_brak, fun _ => ha⟩
+      rw [allzero_prune_eq_replicate (brak_pleq_nil_iff_allzero.mp ha)]
+      exact replicate_zero_pleq_brak _
   case h_cons xh xs ih_head ih_tail =>
     intro a b c ha
     cases a with
@@ -109,28 +102,21 @@ lemma himp_adjunction {x a b c : PreProdNum} (ha : a ⊑ x) :
         cases c with
         | zero =>
           simp only [himp]
-          constructor
-          · intro h; simp only [pleq] at h
-          · intro h; exact absurd (pleq_zero_eq_zero h) (brak_prune_brak_ne_zero _ _)
+          exact ⟨fun h => absurd h brak_not_pleq_zero,
+                 fun h => absurd (pleq_zero_eq_zero h) (brak_prune_brak_ne_zero _ _)⟩
         | brak cs =>
           simp only [himp, himp_list]
           cases as with
-          | nil =>
-            simp only [nil_pleq_brak, ne_eq, brak_ne_zero, not_false_eq_true, nil_prune_nz_eq_nil]
+          | nil => simp only [nil_pleq_brak, nil_prune_brak_eq_nil]
           | cons ah at_ =>
             obtain ⟨ha_head, ha_tail⟩ := cons_pleq_cons_iff.mp ha
             have iff_head := ih_head ah (get bs 0) (get cs 0) ha_head
             have iff_tail := ih_tail (brak at_) (brak bs.tail) (brak cs.tail) ha_tail
             cases bs with
             | nil =>
-              constructor
-              . intro h
-                exact nil_pleq_brak
-              . intro _
-                apply cons_pleq_cons_iff.mpr
-                simp only [get_nil, prune_zero, zero_pleq, iff_true] at iff_head
-                simp only [List.tail_nil, ne_eq, brak_ne_zero, not_false_eq_true, prune_nil_nz_eq_nil, nil_pleq_brak, iff_true] at iff_tail
-                exact ⟨iff_head, iff_tail⟩
+              simp only [get_nil, prune_zero, zero_pleq, iff_true] at iff_head
+              simp only [List.tail_nil, brak_prune_nil_eq_nil, nil_pleq_brak, iff_true] at iff_tail
+              exact ⟨fun _ => nil_pleq_brak, fun _ => cons_pleq_cons_iff.mpr ⟨iff_head, iff_tail⟩⟩
             | cons bh bt =>
               cases cs with
               | nil =>
@@ -148,15 +134,9 @@ lemma himp_adjunction {x a b c : PreProdNum} (ha : a ⊑ x) :
                   exact cons_pleq_cons_iff.mpr ⟨iff_head.mpr (hh ▸ zero_pleq),
                                                  iff_tail.mpr (brak_pleq_nil_iff_allzero.mpr ht)⟩
               | cons ch ct =>
-                simp only [get_cons_zero, List.tail_cons]
-                rw [cons_prune_cons]
-                constructor
-                · intro h
-                  obtain ⟨hh, ht⟩ := cons_pleq_cons_iff.mp h
-                  exact cons_pleq_cons_iff.mpr ⟨iff_head.mp hh, iff_tail.mp ht⟩
-                · intro h
-                  obtain ⟨hh, ht⟩ := cons_pleq_cons_iff.mp h
-                  exact cons_pleq_cons_iff.mpr ⟨iff_head.mpr hh, iff_tail.mpr ht⟩
+                simp only [get_cons_zero, List.tail_cons, cons_prune_cons, cons_pleq_cons_iff]
+                exact ⟨fun ⟨hh, ht⟩ => ⟨iff_head.mp hh, iff_tail.mp ht⟩,
+                       fun ⟨hh, ht⟩ => ⟨iff_head.mpr hh, iff_tail.mpr ht⟩⟩
 
 end PreProdNum
 

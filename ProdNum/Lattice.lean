@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2024 Edwin Agnew. All rights reserved.
+Copyright (c) 2024 Prod Gang. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Edwin Agnew
+Authors: Prod Gang
 -/
 import ProdNum.QuotDefs
 import ProdNum.PruneBasic
@@ -29,9 +29,9 @@ theorem distrib : ∀ x y z : PreProdNum, x ⊓ (y ⊔ z) = (x ⊓ y) ⊔ (x ⊓
   case h_zero_left => simp only [zero_prune, graft_zero, implies_true]
   case h_zero_mid => simp only [zero_graft, prune_zero, implies_true]
   case h_zero_right => simp only [graft_zero, prune_zero, implies_true]
-  case h_nil_left => simp only [ne_eq, brak_graft_brak_ne_zero, not_false_eq_true, nil_prune_nz_eq_nil, brak_ne_zero, graft_nil_eq_self, implies_true]
-  case h_nil_mid => simp only [ne_eq, brak_ne_zero, not_false_eq_true, nil_graft_eq_self, prune_nil_eq_nil, brak_prune_brak_ne_zero, implies_true]
-  case h_nil_right => simp only [ne_eq, brak_ne_zero, not_false_eq_true, graft_nil_eq_self, prune_nil_eq_nil, brak_prune_brak_ne_zero, implies_true]
+  case h_nil_left => simp only [graft, nil_prune_brak_eq_nil, ne_eq, brak_ne_zero, not_false_eq_true, graft_nil_eq_self, implies_true]
+  case h_nil_mid => simp only [ne_eq, brak_ne_zero, not_false_eq_true, nil_graft_eq_self, brak_prune_nil_eq_nil, brak_prune_brak_ne_zero, implies_true]
+  case h_nil_right => simp only [ne_eq, brak_ne_zero, not_false_eq_true, graft_nil_eq_self, brak_prune_nil_eq_nil, brak_prune_brak_ne_zero, implies_true]
   case h_cons_cons_cons =>
     intros _ _ _ _ _ _ hx hxs
     simp only [prune, graft, brak.injEq, graft_list, prune_list, List.cons.injEq] at hxs ⊢
@@ -42,8 +42,8 @@ theorem absorption1 : ∀ x y : PreProdNum, x ⊔ (x ⊓ y) = x := by
   apply PreProdNum.induction_list₂
   case h_zero_left => simp only [zero_prune, graft_zero, implies_true]
   case h_zero_right => simp only [prune_zero, graft_zero, implies_true]
-  case h_nil_left => simp only [ne_eq, brak_ne_zero, not_false_eq_true, nil_prune_nz_eq_nil, graft_nil_eq_self, implies_true]
-  case h_nil_right => simp only [ne_eq, brak_ne_zero, not_false_eq_true, prune_nil_eq_nil, graft_nil_eq_self, implies_true]
+  case h_nil_left => simp only [nil_prune_brak_eq_nil, ne_eq, brak_ne_zero, not_false_eq_true, graft_nil_eq_self, implies_true]
+  case h_nil_right => simp only [brak_prune_nil_eq_nil, ne_eq, brak_ne_zero, not_false_eq_true, graft_nil_eq_self, implies_true]
   case h_cons_cons =>
     intro x y xs ys hx hxs
     simp only [graft, prune, brak.injEq, prune_list, graft_list, List.cons.injEq] at hxs ⊢
@@ -53,7 +53,7 @@ theorem absorption2 : ∀ x y : PreProdNum, x ⊓ (x ⊔ y) = x := by
   apply PreProdNum.induction_list₂
   case h_zero_left => simp only [zero_graft, zero_prune, implies_true]
   case h_zero_right =>  intro x; simp only [graft_zero, prune_idem]
-  case h_nil_left => simp only [ne_eq, brak_ne_zero, not_false_eq_true, nil_graft_eq_self, nil_prune_nz_eq_nil, implies_true]
+  case h_nil_left => simp only [ne_eq, brak_ne_zero, not_false_eq_true, nil_graft_eq_self, nil_prune_brak_eq_nil, implies_true]
   case h_nil_right =>  simp only [ne_eq, brak_ne_zero, not_false_eq_true, graft_nil_eq_self, prune_idem, implies_true]
   case h_cons_cons =>
     intro x y xs ys hx hxs

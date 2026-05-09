@@ -1,10 +1,11 @@
 /-
-Copyright (c) 2024 Edwin Agnew. All rights reserved.
+Copyright (c) 2024 Prod Gang. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Edwin Agnew
+Authors: Prod Gang
 -/
 import ProdNum.PreProdDefs
 import ProdNum.QuotDefs
+import ProdNum.FactorizationHelpers
 import ProdNum.Interp
 import ProdNum.Bij
 import ProdNum.PruneBasic

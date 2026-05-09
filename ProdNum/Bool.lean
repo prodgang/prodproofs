@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2024 Edwin Agnew. All rights reserved.
+Copyright (c) 2024 Prod Gang. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Edwin Agnew
+Authors: Prod Gang
 -/
 import ProdNum.Shallow
 import ProdNum.Heyting
@@ -234,7 +234,8 @@ theorem lem_iff_shallow {x : ProdNum} (hnil : nil ≤ x) :
     have hci_zero : get (compl_list xs cs) i = PreProdNum.zero := by
       have h1 := allzero_get_zero (prune_compl_list_allzero xs cs) i
       rw [get_prune_list, get_replicate_nil_pos] at h1
-      exact nil_prune_eq_zero_iff.mp h1
+      apply prune_eq_zero_iff.mp at h1
+      cases h1; contradiction; assumption
     have hget_equiv : (get xs i).equiv PreProdNum.nil := by
       have hge := h_lem e
       rw [eq_mk_brak_of_rep hrep_e, hcompl_eq, graft_mk_mk, eq_mk_brak_of_rep hxrep] at hge
