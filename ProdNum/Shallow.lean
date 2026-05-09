@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Prod Gang
 -/
 import ProdNum.Poset
+import Mathlib.Data.Nat.Squarefree
 
 /-!
 # Productive Numbers — Shallow Elements
@@ -56,6 +57,38 @@ lemma shallow_iff_pleq_nil {xs : List PreProdNum} :
             rwa [get_cons_succ] at this
 
 
+lemma interp_le_one_iff_pleq_nil {x : PreProdNum} : interp x ≤ 1 ↔ x ⊑ nil := by
+  cases x with
+  | zero => exact ⟨fun _ => zero_pleq, fun _ => Nat.zero_le 1⟩
+  | brak xs =>
+    simp only [interp]
+    constructor
+    · intro h
+      apply brak_pleq_nil_iff_allzero.mpr
+      have hne := @interp_list_neq_zero 0 xs
+      have heq : interp_list xs 0 = 1 := by omega
+      exact interp_list_allzero_eq_one_iff.mpr heq
+    · intro h
+      have haz := brak_pleq_nil_iff_allzero.mp h
+      have heq : interp_list xs 0 = 1 := interp_list_allzero_eq_one_iff.mp haz
+      omega
+
+lemma brak_shallow_iff_squarefree {xs : List PreProdNum} :
+    shallow xs ↔ Squarefree (interp (brak xs)) := by
+  simp only [interp]
+  rw [Nat.squarefree_iff_factorization_le_one (@interp_list_neq_zero 0 xs),
+      shallow_iff_pleq_nil]
+  constructor
+  · intro h p
+    by_cases hp : Nat.Prime p
+    · obtain ⟨i, hi⟩ := prime_index hp
+      rw [hi, factorization_interp_list_zero]
+      exact interp_le_one_iff_pleq_nil.mpr (h i)
+    · simp only [Nat.factorization_eq_zero_of_not_prime _ hp, zero_le]
+  · intro h i
+    rw [← interp_le_one_iff_pleq_nil, ← factorization_interp_list_zero]
+    exact h (Nat.nth Nat.Prime i)
+
 lemma pleq_shallow {xs ys : List PreProdNum}
     (hs : shallow ys) (hle : brak xs ⊑ brak ys) : shallow xs :=
   shallow_iff_pleq_nil.mpr fun i =>
@@ -81,5 +114,24 @@ lemma shallow_exists_brak_rep {x : ProdNum} (hx : shallow x) :
   | zero    => simp only [ProdNum.shallow, hrep] at hx
   | brak xs => exact ⟨xs, rfl, by rwa [ProdNum.shallow, hrep] at hx⟩
 
+
+theorem shallow_iff_squarefree {x : ProdNum} : ProdNum.shallow x ↔ Squarefree (interp x) := by
+  cases hrep : x.rep with
+  | zero =>
+    have hxz : x = zero := by rw [← mk_rep_eq (q := x), hrep]; rfl
+    subst hxz
+    simp only [shallow, hrep, interp_zero, false_iff]
+    exact fun h => absurd (h 2 (dvd_zero _)) (by decide)
+  | brak xs =>
+    have hx := eq_mk_brak_of_rep hrep
+    constructor
+    · intro hsh
+      simp only [shallow, hrep] at hsh
+      rw [hx, interp_mk]
+      exact PreProdNum.brak_shallow_iff_squarefree.mp hsh
+    · intro hsf
+      simp only [shallow, hrep]
+      rw [hx, interp_mk] at hsf
+      exact PreProdNum.brak_shallow_iff_squarefree.mpr hsf
 
 end ProdNum

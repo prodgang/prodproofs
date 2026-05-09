@@ -180,4 +180,15 @@ theorem interp_bijective : Function.Bijective interp := by
     rw [interp_mk]
     exact PreProdNum.interp_fromNat n
 
+lemma interp_fromNat (n : ℕ) : interp (fromNat n) = n :=
+  (interp_mk (PreProdNum.fromNat n)).trans (PreProdNum.interp_fromNat n)
+
+lemma fromNat_interp (x : ProdNum) : fromNat (interp x) = x :=
+  interp_bijective.injective (interp_fromNat (interp x))
+
+noncomputable def interpEquiv : ProdNum ≃ ℕ := Equiv.ofBijective interp interp_bijective
+
+lemma interp_eq_one_iff {x : ProdNum} : interp x = 1 ↔ x = nil :=
+  ⟨fun h => interp_bijective.injective (h.trans interp_nil.symm), fun h => h ▸ interp_nil⟩
+
 end ProdNum
